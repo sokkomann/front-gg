@@ -3,48 +3,85 @@ name: globalgates issue template
 about: Describe this issue template's purpose here.
 title: ''
 labels: ''
-assignees: ''
+assignees: kausha-kr
 
 ---
 
----
-name: "🚀 Project Task (FE/BE 통합)"
-about: 기능 구현, 버그 수정, 리팩토링 등 모든 작업을 위한 통합 양식입니다.
-title: "[분류] 작업 제목"
-labels: enhancement, bug, chore
-assignees: ''
+name: ⚙️ Service 개발/수정
+description: Spring Backend Service 단위의 개발 또는 수정 작업을 요청합니다.
+title: "[Service] "
+labels: ["backend", "service"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🛠️ Service 작업 요청서
+        > 새로운 Service 로직을 추가하거나 기존 로직을 수정할 때 작성합니다.
+        
+        ---
 
----
+  - type: dropdown
+    id: module
+    attributes:
+      label: 📁 대상 모듈
+      description: 작업 대상 모듈을 선택해주세요.
+      options:
+        - main (메인)
+        - login (로그인)
+        - join (회원가입)
+        - QnA (질문)
+        - video chat (화상채팅)
+        - news (뉴스)
+        - bookmark (북마크)
+        - mypage (사업자)
+        - mypage (전문가)
+        - admin (관리자)
+        - friends (친구)
+        - 404 (오류)
+        - ad (광고)
+        - chat (채팅)
+        - search (검색)
+        - notification (알림)
+        - subscribe (구독)
+        - common (공통 모듈)
+    validations:
+      required: true
 
-## 📌 작업 유형
-- [ ] ✨ New Feature (새로운 기능 구현)
-- [ ] 🐛 Bug Fix (버그 수정)
-- [ ] ⚙️ Task / Refactor (코드 개선 및 기타 작업)
-- [ ] 📄 Documentation (문서화)
+  - type: dropdown
+    id: work-type
+    attributes:
+      label: 🔧 작업 유형
+      description: 작업 유형을 선택해주세요.
+      options:
+        - 🆕 신규 개발
+        - ✏️ 기존 수정
+        - 🔄 리팩토링
+        - 🐛 버그 수정
+    validations:
+      required: true
 
-## 🏗️ 작업 도메인 (Scope)
-- [ ] Backend (Spring Boot, MyBatis, DB)
-- [ ] Frontend (UI/UX, API Integration)
-- [ ] Design / DevOps / Etc.
+  - type: input
+    id: service-name
+    attributes:
+      label: 📌 Service 클래스/메서드명
+      description: 작업 대상 Service 클래스명 또는 메서드명을 입력해주세요.
+      placeholder: "예: MemberService.join() 또는 ExperienceService"
+    validations:
+      required: true
 
----
-
-## 📝 작업 개요
-수행할 작업의 목적과 배경을 간략히 설명해주세요. (예: 펀딩 등록 API 개발 및 연동)
-
-## ✅ 주요 작업 내용 (Checklist)
-- [ ] 
-- [ ] 
-- [ ] 
-
-## 🚨 문제 상황 & 재현 (버그 수정 시 작성)
-- 발생 현상: 
-- 에러 로그/스크린샷: 
-
-## 🔗 관련 참고 자료
-- 관련 이슈 번호: #
-- 디자인 시안 또는 API 명세서 링크: 
-
----
-## 💡 비고
-특이 사항이나 주의할 점이 있다면 작성해주세요.
+  - type: textarea
+    id: description
+    attributes:
+      label: 📝 작업 개요
+      description: Service가 수행해야 할 비즈니스 로직의 목적과 내용을 상세히 기술해주세요.
+      placeholder: |
+        ### 목적
+        - ex)회원 가입 시 중복 아이디 체크 로직 구현
+        
+        ### 상세 내용
+        - 
+        - 
+        - 
+    validations:
+      required: true
