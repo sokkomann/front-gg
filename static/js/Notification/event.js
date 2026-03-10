@@ -44,6 +44,27 @@ const replyLocationDeleteButton = replyModalOverlay?.querySelector("[data-locati
 const replyLocationCompleteButton = replyModalOverlay?.querySelector("[data-location-complete]");
 const replyLocationSearchInput = replyModalOverlay?.querySelector("[data-location-search]");
 const replyLocationList = replyModalOverlay?.querySelector("[data-location-list]");
+const replyUserTagTrigger = replyModalOverlay?.querySelector("[data-user-tag-trigger]");
+const replyUserTagLabel = replyModalOverlay?.querySelector("[data-user-tag-label]");
+const replyTagView = replyModalOverlay?.querySelector(".tweet-modal__tag-view");
+const replyTagCloseButton = replyModalOverlay?.querySelector("[data-testid='tag-back']");
+const replyTagCompleteButton = replyModalOverlay?.querySelector("[data-tag-complete]");
+const replyTagSearchForm = replyModalOverlay?.querySelector("[data-tag-search-form]");
+const replyTagSearchInput = replyModalOverlay?.querySelector("[data-tag-search]");
+const replyTagChipList = replyModalOverlay?.querySelector("[data-tag-chip-list]");
+const replyTagResults = replyModalOverlay?.querySelector("[data-tag-results]");
+const replyMediaAltTrigger = replyModalOverlay?.querySelector("[data-media-alt-trigger]");
+const replyMediaAltLabel = replyModalOverlay?.querySelector("[data-media-alt-label]");
+const replyMediaView = replyModalOverlay?.querySelector(".tweet-modal__media-view");
+const replyMediaBackButton = replyModalOverlay?.querySelector("[data-testid='media-back']");
+const replyMediaPrevButton = replyModalOverlay?.querySelector("[data-media-prev]");
+const replyMediaNextButton = replyModalOverlay?.querySelector("[data-media-next]");
+const replyMediaSaveButton = replyModalOverlay?.querySelector("[data-media-save]");
+const replyMediaTitle = replyModalOverlay?.querySelector("[data-media-title]");
+const replyMediaPreviewImages =
+    replyModalOverlay?.querySelectorAll("[data-media-preview-image]") ?? [];
+const replyMediaAltInput = replyModalOverlay?.querySelector("[data-media-alt-input]");
+const replyMediaAltCount = replyModalOverlay?.querySelector("[data-media-alt-count]");
 
 // 화면 상태값
 let lastScrollY = 0;
@@ -57,10 +78,18 @@ let pendingReplyFormats = new Set();
 let activeEmojiCategory = "recent";
 let selectedLocation = null;
 let pendingLocation = null;
+let selectedTaggedUsers = [];
+let pendingTaggedUsers = [];
+let replyMediaEdits = [];
+let pendingReplyMediaEdits = [];
+let activeReplyMediaIndex = 0;
 let attachedReplyFiles = [];
 let attachedReplyFileUrls = [];
 let pendingAttachmentEditIndex = null;
+let userTagSearchTimer = null;
+let userTagSearchToken = 0;
 const maxReplyImages = 4;
+const maxReplyMediaAltLength = 1000;
 
 // 이모지/위치 데이터
 const emojiRecentsKey = "notification_reply_recent_emojis";
@@ -80,6 +109,40 @@ const availableLocations = [
     "대한민국 성동구",
     "대한민국 용산구",
     "대한민국 마포구",
+];
+
+const availableTagUsers = [
+    {
+        id: "keshi",
+        name: "keshi",
+        handle: "@keshimusic",
+        avatar:
+            "https://pbs.twimg.com/profile_images/1416205482484453387/7oN2tq4x_bigger.jpg",
+        canTag: true,
+    },
+    {
+        id: "north",
+        name: "North.",
+        handle: "@keshiyiu",
+        avatar: "",
+        canTag: false,
+    },
+    {
+        id: "sokkomann",
+        name: "김민중",
+        handle: "@sokkomann",
+        avatar:
+            "https://pbs.twimg.com/profile_images/2029361845321207808/LltLeaLS_bigger.jpg",
+        canTag: true,
+    },
+    {
+        id: "karpathy",
+        name: "Andrej Karpathy",
+        handle: "@karpathy",
+        avatar:
+            "https://pbs.twimg.com/profile_images/1713529449064916992/7WFhhw6p_bigger.jpg",
+        canTag: true,
+    },
 ];
 
 const emojiCategoryMeta = {
@@ -154,6 +217,20 @@ const formatButtonLabels = {
 
 function getTextContent(element) {
     return element?.textContent.trim() ?? "";
+}
+
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, (char) => {
+        const entities = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+        };
+
+        return entities[char] ?? char;
+    });
 }
 
 // Twemoji CDN이 로드되어 있으면 현재 영역의 유니코드 이모지를 SVG로 치환한다.
@@ -335,6 +412,422 @@ function renderEmojiPickerContent() {
 function renderEmojiPicker() {
     renderEmojiTabs();
     renderEmojiPickerContent();
+}
+
+function cloneTaggedUsers(users) {
+    return users.map((user) => ({ ...user }));
+}
+
+function isTagModalOpen() {
+    return Boolean(replyTagView && !replyTagView.hidden);
+}
+
+function getTagSearchTerm() {
+    return replyTagSearchInput?.value.trim() ?? "";
+}
+
+function getTaggedUserSummary(users) {
+    if (users.length === 0) {
+        return "사용자 태그하기";
+    }
+
+    return users.map((user) => user.name).join(", ");
+}
+
+function syncUserTagTrigger() {
+    const canTagUsers = isReplyImageSet();
+    const label = getTaggedUserSummary(selectedTaggedUsers);
+
+    if (replyUserTagTrigger) {
+        replyUserTagTrigger.hidden = !canTagUsers;
+        replyUserTagTrigger.disabled = !canTagUsers;
+        replyUserTagTrigger.setAttribute("aria-label", label);
+    }
+
+    if (replyUserTagLabel) {
+        replyUserTagLabel.textContent = label;
+    }
+
+    if (!canTagUsers && isTagModalOpen()) {
+        closeTagPanel({ restoreFocus: false });
+    }
+}
+
+function renderTagChipList() {
+    if (!replyTagChipList) {
+        return;
+    }
+
+    if (pendingTaggedUsers.length === 0) {
+        replyTagChipList.innerHTML = "";
+        return;
+    }
+
+    replyTagChipList.innerHTML = pendingTaggedUsers
+        .map((user) => {
+            const avatarMarkup = user.avatar
+                ? `<span class="tweet-modal__tag-chip-avatar"><img src="${escapeHtml(user.avatar)}" alt="${escapeHtml(user.name)}" /></span>`
+                : '<span class="tweet-modal__tag-chip-avatar"></span>';
+
+            return `
+                <button type="button" class="tweet-modal__tag-chip" data-tag-remove-id="${escapeHtml(user.id)}">
+                    ${avatarMarkup}
+                    <span class="tweet-modal__tag-chip-name">${escapeHtml(user.name)}</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true" class="tweet-modal__tag-chip-icon">
+                        <g><path d="M10.59 12 4.54 5.96l1.42-1.42L12 10.59l6.04-6.05 1.42 1.42L13.41 12l6.05 6.04-1.42 1.42L12 13.41l-6.04 6.05-1.42-1.42L10.59 12z"></path></g>
+                    </svg>
+                </button>
+            `;
+        })
+        .join("");
+}
+
+function getFilteredTagUsers(query) {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+        return [];
+    }
+
+    return availableTagUsers.filter((user) => {
+        const haystack = `${user.name} ${user.handle}`.toLowerCase();
+        return haystack.includes(normalizedQuery);
+    });
+}
+
+function renderTagResults(users, { showLoading = false } = {}) {
+    if (!replyTagResults || !replyTagSearchInput) {
+        return;
+    }
+
+    const hasQuery = getTagSearchTerm().length > 0;
+
+    if (!hasQuery) {
+        replyTagSearchInput.setAttribute("aria-expanded", "false");
+        replyTagSearchInput.removeAttribute("aria-controls");
+        replyTagResults.removeAttribute("role");
+        replyTagResults.removeAttribute("id");
+        replyTagResults.innerHTML = "";
+        return;
+    }
+
+    replyTagSearchInput.setAttribute("aria-expanded", "true");
+    replyTagSearchInput.setAttribute("aria-controls", "notification-tag-results");
+    replyTagResults.setAttribute("role", "listbox");
+    replyTagResults.id = "notification-tag-results";
+
+    if (showLoading) {
+        replyTagResults.innerHTML =
+            '<div class="tweet-modal__tag-loading" role="progressbar"><div class="tweet-modal__tag-loading-bar"></div></div>';
+        return;
+    }
+
+    if (users.length === 0) {
+        replyTagResults.innerHTML =
+            '<p class="tweet-modal__tag-empty">일치하는 사용자를 찾지 못했습니다.</p>';
+        return;
+    }
+
+    replyTagResults.innerHTML = users
+        .map((user) => {
+            const isSelected = pendingTaggedUsers.some((taggedUser) => taggedUser.id === user.id);
+            const isDisabled = !user.canTag || isSelected;
+            const subtitle = !user.canTag
+                ? `${user.handle} 님은 사진에 태그할 수 없습니다.`
+                : isSelected
+                  ? `${user.handle} 이미 태그됨`
+                  : user.handle;
+            const avatarMarkup = user.avatar
+                ? `<span class="tweet-modal__tag-avatar"><img src="${escapeHtml(user.avatar)}" alt="${escapeHtml(user.name)}" /></span>`
+                : '<span class="tweet-modal__tag-avatar"></span>';
+
+            return `
+                <div role="option" class="tweet-modal__tag-option" data-testid="typeaheadResult">
+                    <div role="checkbox" aria-checked="${String(isSelected)}" aria-disabled="${String(isDisabled)}" class="tweet-modal__tag-checkbox">
+                        <button
+                            type="button"
+                            class="tweet-modal__tag-user"
+                            data-tag-user-id="${escapeHtml(user.id)}"
+                            ${isDisabled ? "disabled" : ""}
+                        >
+                            ${avatarMarkup}
+                            <span class="tweet-modal__tag-user-body">
+                                <span class="tweet-modal__tag-user-name">${escapeHtml(user.name)}</span>
+                                <span class="tweet-modal__tag-user-handle">${escapeHtml(subtitle)}</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        })
+        .join("");
+}
+
+function runTagSearch({ showLoading = false } = {}) {
+    const query = getTagSearchTerm();
+
+    if (!query) {
+        renderTagResults([]);
+        return;
+    }
+
+    if (!showLoading) {
+        renderTagResults(getFilteredTagUsers(query));
+        return;
+    }
+
+    const searchToken = ++userTagSearchToken;
+    window.clearTimeout(userTagSearchTimer);
+    renderTagResults([], { showLoading: true });
+
+    userTagSearchTimer = window.setTimeout(() => {
+        if (searchToken !== userTagSearchToken) {
+            return;
+        }
+
+        renderTagResults(getFilteredTagUsers(query));
+    }, 180);
+}
+
+function openTagPanel() {
+    if (!composeView || !replyTagView || !isReplyImageSet()) {
+        return;
+    }
+
+    closeEmojiPicker();
+    pendingTaggedUsers = cloneTaggedUsers(selectedTaggedUsers);
+    composeView.hidden = true;
+    replyTagView.hidden = false;
+
+    if (replyTagSearchInput) {
+        replyTagSearchInput.value = "";
+    }
+
+    renderTagChipList();
+    renderTagResults([]);
+
+    window.requestAnimationFrame(() => {
+        replyTagSearchInput?.focus();
+    });
+}
+
+function closeTagPanel({ restoreFocus = true } = {}) {
+    if (!composeView || !replyTagView || replyTagView.hidden) {
+        return;
+    }
+
+    replyTagView.hidden = true;
+    composeView.hidden = false;
+    pendingTaggedUsers = cloneTaggedUsers(selectedTaggedUsers);
+    window.clearTimeout(userTagSearchTimer);
+
+    if (replyTagSearchInput) {
+        replyTagSearchInput.value = "";
+    }
+
+    renderTagChipList();
+    renderTagResults([]);
+
+    if (restoreFocus) {
+        window.requestAnimationFrame(() => {
+            if (replyUserTagTrigger && !replyUserTagTrigger.hidden) {
+                replyUserTagTrigger.focus();
+                return;
+            }
+
+            replyEditor?.focus();
+        });
+    }
+}
+
+function applyPendingTaggedUsers() {
+    selectedTaggedUsers = cloneTaggedUsers(pendingTaggedUsers);
+    syncUserTagTrigger();
+}
+
+function resetTaggedUsers() {
+    selectedTaggedUsers = [];
+    pendingTaggedUsers = [];
+    window.clearTimeout(userTagSearchTimer);
+
+    if (replyTagSearchInput) {
+        replyTagSearchInput.value = "";
+    }
+
+    renderTagChipList();
+    renderTagResults([]);
+    syncUserTagTrigger();
+}
+
+function createDefaultReplyMediaEdit() {
+    return {
+        alt: "",
+    };
+}
+
+function cloneReplyMediaEdits(edits) {
+    return edits.map((edit) => ({
+        alt: edit.alt,
+    }));
+}
+
+function isMediaEditorOpen() {
+    return Boolean(replyMediaView && !replyMediaView.hidden);
+}
+
+function getReplyMediaTriggerLabel() {
+    return replyMediaEdits.some((edit) => edit.alt.trim().length > 0)
+        ? "설명 수정"
+        : "설명 추가";
+}
+
+function syncReplyMediaEditsToAttachments() {
+    if (!isReplyImageSet()) {
+        replyMediaEdits = [];
+        pendingReplyMediaEdits = [];
+        activeReplyMediaIndex = 0;
+        syncMediaAltTrigger();
+        return;
+    }
+
+    replyMediaEdits = attachedReplyFiles.map((_, index) => {
+        const existing = replyMediaEdits[index];
+        return existing
+            ? {
+                  alt: existing.alt ?? "",
+              }
+            : createDefaultReplyMediaEdit();
+    });
+
+    if (pendingReplyMediaEdits.length !== replyMediaEdits.length) {
+        pendingReplyMediaEdits = cloneReplyMediaEdits(replyMediaEdits);
+    }
+
+    activeReplyMediaIndex = Math.min(
+        activeReplyMediaIndex,
+        Math.max(replyMediaEdits.length - 1, 0),
+    );
+    syncMediaAltTrigger();
+}
+
+function getCurrentReplyMediaUrl() {
+    return attachedReplyFileUrls[activeReplyMediaIndex] ?? "";
+}
+
+function getReplyMediaImageAlt(index) {
+    return replyMediaEdits[index]?.alt ?? "";
+}
+
+function getCurrentPendingReplyMediaEdit() {
+    return pendingReplyMediaEdits[activeReplyMediaIndex] ?? createDefaultReplyMediaEdit();
+}
+
+function getReplyMediaTitle() {
+    return "이미지 설명 수정";
+}
+
+function syncMediaAltTrigger() {
+    const canEdit = isReplyImageSet();
+    const label = getReplyMediaTriggerLabel();
+
+    if (replyMediaAltTrigger) {
+        replyMediaAltTrigger.hidden = !canEdit;
+        replyMediaAltTrigger.disabled = !canEdit;
+        replyMediaAltTrigger.setAttribute("aria-label", label);
+    }
+
+    if (replyMediaAltLabel) {
+        replyMediaAltLabel.textContent = label;
+    }
+
+    if (!canEdit && isMediaEditorOpen()) {
+        closeMediaEditor({ restoreFocus: false, discardChanges: true });
+    }
+}
+
+function renderMediaEditor() {
+    if (!replyMediaView || pendingReplyMediaEdits.length === 0) {
+        return;
+    }
+
+    const currentEdit = getCurrentPendingReplyMediaEdit();
+    const currentUrl = getCurrentReplyMediaUrl();
+    const imageAlt = currentEdit.alt ?? "";
+
+    if (replyMediaTitle) {
+        replyMediaTitle.textContent = getReplyMediaTitle();
+    }
+
+    if (replyMediaPrevButton) {
+        replyMediaPrevButton.disabled = activeReplyMediaIndex === 0;
+    }
+
+    if (replyMediaNextButton) {
+        replyMediaNextButton.disabled =
+            activeReplyMediaIndex >= pendingReplyMediaEdits.length - 1;
+    }
+
+    replyMediaPreviewImages.forEach((image) => {
+        image.src = currentUrl;
+        image.alt = imageAlt;
+        image.style.transform = "";
+    });
+
+    if (replyMediaAltInput) {
+        replyMediaAltInput.value = imageAlt;
+    }
+
+    if (replyMediaAltCount) {
+        replyMediaAltCount.textContent = `${imageAlt.length} / ${maxReplyMediaAltLength.toLocaleString()}`;
+    }
+}
+
+function openMediaEditor() {
+    if (!composeView || !replyMediaView || !isReplyImageSet()) {
+        return;
+    }
+
+    closeEmojiPicker();
+    pendingReplyMediaEdits = cloneReplyMediaEdits(replyMediaEdits);
+    activeReplyMediaIndex = 0;
+    composeView.hidden = true;
+    replyMediaView.hidden = false;
+    renderMediaEditor();
+
+    window.requestAnimationFrame(() => {
+        replyMediaAltInput?.focus();
+    });
+}
+
+function closeMediaEditor({ restoreFocus = true, discardChanges = true } = {}) {
+    if (!composeView || !replyMediaView || replyMediaView.hidden) {
+        return;
+    }
+
+    if (discardChanges) {
+        pendingReplyMediaEdits = cloneReplyMediaEdits(replyMediaEdits);
+    }
+
+    replyMediaView.hidden = true;
+    composeView.hidden = false;
+
+    if (restoreFocus) {
+        window.requestAnimationFrame(() => {
+            if (replyMediaAltTrigger && !replyMediaAltTrigger.hidden) {
+                replyMediaAltTrigger.focus();
+                return;
+            }
+
+            replyEditor?.focus();
+        });
+    }
+}
+
+function saveReplyMediaEdits() {
+    replyMediaEdits = cloneReplyMediaEdits(pendingReplyMediaEdits);
+    renderReplyAttachment();
+    syncMediaAltTrigger();
+    closeMediaEditor({ discardChanges: false });
 }
 
 function isLocationModalOpen() {
@@ -530,6 +1023,8 @@ function resetReplyAttachment() {
     clearAttachedReplyFileUrls();
     attachedReplyFiles = [];
     pendingAttachmentEditIndex = null;
+    resetTaggedUsers();
+    syncReplyMediaEditsToAttachments();
 
     if (replyFileInput) {
         replyFileInput.value = "";
@@ -550,12 +1045,14 @@ function createReplyAttachmentUrls() {
 }
 
 function getReplyImageCell(index, imageUrl, cellClass) {
+    const imageAlt = getReplyMediaImageAlt(index);
+
     return `
         <div class="media-cell ${cellClass}">
             <div class="media-cell-inner">
                 <div class="media-img-container" aria-label="미디어" role="group">
                     <div class="media-bg" style="background-image: url('${imageUrl}');"></div>
-                    <img alt="" draggable="false" src="${imageUrl}" class="media-img">
+                    <img alt="${escapeHtml(imageAlt)}" draggable="false" src="${imageUrl}" class="media-img">
                 </div>
                 <div class="media-btn-row">
                     <button type="button" class="media-btn" data-attachment-edit-index="${index}">
@@ -684,6 +1181,8 @@ function renderReplyAttachment() {
     if (attachedReplyFiles.length === 0) {
         replyAttachmentMedia.innerHTML = "";
         replyAttachmentPreview.hidden = true;
+        resetTaggedUsers();
+        syncReplyMediaEditsToAttachments();
         return;
     }
 
@@ -691,15 +1190,21 @@ function renderReplyAttachment() {
     createReplyAttachmentUrls();
 
     if (isReplyImageSet()) {
+        syncReplyMediaEditsToAttachments();
+        syncUserTagTrigger();
         renderReplyImageGrid();
         return;
     }
 
     if (isReplyVideoSet()) {
+        resetTaggedUsers();
+        syncReplyMediaEditsToAttachments();
         renderReplyVideoAttachment();
         return;
     }
 
+    resetTaggedUsers();
+    syncReplyMediaEditsToAttachments();
     replyAttachmentMedia.innerHTML = "";
     const filePreview = document.createElement("div");
     const fileIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -1112,6 +1617,8 @@ function openReplyModal(button) {
     activeEmojiCategory = "recent";
     selectedLocation = null;
     pendingLocation = null;
+    selectedTaggedUsers = [];
+    pendingTaggedUsers = [];
     resetReplyAttachment();
     if (replyEmojiSearchInput) {
         replyEmojiSearchInput.value = "";
@@ -1125,8 +1632,16 @@ function openReplyModal(button) {
     if (replyLocationView) {
         replyLocationView.hidden = true;
     }
+    if (replyTagView) {
+        replyTagView.hidden = true;
+    }
+    if (replyMediaView) {
+        replyMediaView.hidden = true;
+    }
     renderLocationList();
     syncLocationUI();
+    syncUserTagTrigger();
+    syncReplyMediaEditsToAttachments();
     syncReplySubmitState();
     syncReplyFormatButtons();
 
@@ -1160,6 +1675,8 @@ function closeReplyModal(options = {}) {
     document.body.classList.remove("modal-open");
     closeEmojiPicker();
     closeLocationPanel({ restoreFocus: false });
+    closeTagPanel({ restoreFocus: false });
+    closeMediaEditor({ restoreFocus: false, discardChanges: true });
 
     if (replyEditor) {
         replyEditor.textContent = "";
@@ -1169,9 +1686,13 @@ function closeReplyModal(options = {}) {
     pendingReplyFormats = new Set();
     selectedLocation = null;
     pendingLocation = null;
+    selectedTaggedUsers = [];
+    pendingTaggedUsers = [];
     resetReplyAttachment();
     renderLocationList();
     syncLocationUI();
+    syncUserTagTrigger();
+    syncReplyMediaEditsToAttachments();
     syncReplySubmitState();
     syncReplyFormatButtons();
     if (restoreFocus) {
@@ -1188,7 +1709,7 @@ function trapFocus(event) {
 
     const focusableElements = Array.from(
         replyModal.querySelectorAll(
-            'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+            'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
         ),
     ).filter((element) => !element.hasAttribute("hidden"));
 
@@ -1445,6 +1966,7 @@ function openNotificationDropdown(button) {
 // 초기 렌더링: 위치/탭 상태를 한 번 맞춰 둔다.
 renderLocationList();
 syncLocationUI();
+syncUserTagTrigger();
 setActiveTab("notifications");
 
 // 하단 탭 아이콘 상태 변경
@@ -1580,6 +2102,16 @@ replyModalOverlay?.addEventListener("click", (event) => {
 replyModalOverlay?.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
         event.preventDefault();
+        if (isMediaEditorOpen()) {
+            closeMediaEditor();
+            return;
+        }
+
+        if (isTagModalOpen()) {
+            closeTagPanel();
+            return;
+        }
+
         if (isLocationModalOpen()) {
             closeLocationPanel();
             return;
@@ -1709,6 +2241,16 @@ replyGeoButton?.addEventListener("click", (event) => {
     openLocationPanel();
 });
 
+replyUserTagTrigger?.addEventListener("click", (event) => {
+    event.preventDefault();
+    openTagPanel();
+});
+
+replyMediaAltTrigger?.addEventListener("click", (event) => {
+    event.preventDefault();
+    openMediaEditor();
+});
+
 replyLocationDisplayButton?.addEventListener("click", (event) => {
     event.preventDefault();
     openLocationPanel();
@@ -1724,6 +2266,51 @@ replyEmojiSearchInput?.addEventListener("input", () => {
 
 replyLocationSearchInput?.addEventListener("input", () => {
     renderLocationList();
+});
+
+replyTagSearchForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+});
+
+replyTagSearchInput?.addEventListener("input", () => {
+    runTagSearch({ showLoading: true });
+});
+
+replyMediaBackButton?.addEventListener("click", () => {
+    closeMediaEditor();
+});
+
+replyMediaSaveButton?.addEventListener("click", () => {
+    saveReplyMediaEdits();
+});
+
+replyMediaPrevButton?.addEventListener("click", () => {
+    if (activeReplyMediaIndex === 0) {
+        return;
+    }
+
+    activeReplyMediaIndex -= 1;
+    renderMediaEditor();
+});
+
+replyMediaNextButton?.addEventListener("click", () => {
+    if (activeReplyMediaIndex >= pendingReplyMediaEdits.length - 1) {
+        return;
+    }
+
+    activeReplyMediaIndex += 1;
+    renderMediaEditor();
+});
+
+replyMediaAltInput?.addEventListener("input", () => {
+    const currentEdit = pendingReplyMediaEdits[activeReplyMediaIndex];
+
+    if (!currentEdit) {
+        return;
+    }
+
+    currentEdit.alt = replyMediaAltInput.value.slice(0, maxReplyMediaAltLength);
+    renderMediaEditor();
 });
 
 replyEmojiTabs.forEach((tab) => {
@@ -1777,6 +2364,15 @@ replyLocationCloseButton?.addEventListener("click", () => {
     closeLocationPanel();
 });
 
+replyTagCloseButton?.addEventListener("click", () => {
+    closeTagPanel();
+});
+
+replyTagCompleteButton?.addEventListener("click", () => {
+    applyPendingTaggedUsers();
+    closeTagPanel();
+});
+
 replyLocationDeleteButton?.addEventListener("click", () => {
     resetLocationState();
     closeLocationPanel();
@@ -1806,6 +2402,46 @@ replyLocationList?.addEventListener("click", (event) => {
 
     applyLocation(location);
     closeLocationPanel();
+});
+
+replyTagChipList?.addEventListener("click", (event) => {
+    const chipButton = event.target.closest("[data-tag-remove-id]");
+
+    if (!chipButton) {
+        return;
+    }
+
+    const userId = chipButton.getAttribute("data-tag-remove-id");
+
+    pendingTaggedUsers = pendingTaggedUsers.filter((user) => user.id !== userId);
+    renderTagChipList();
+    runTagSearch();
+    replyTagSearchInput?.focus();
+});
+
+replyTagResults?.addEventListener("click", (event) => {
+    const userButton = event.target.closest("[data-tag-user-id]");
+
+    if (!userButton || userButton.hasAttribute("disabled")) {
+        return;
+    }
+
+    const userId = userButton.getAttribute("data-tag-user-id");
+    const user = availableTagUsers.find((entry) => entry.id === userId);
+
+    if (!user || !user.canTag || pendingTaggedUsers.some((entry) => entry.id === user.id)) {
+        return;
+    }
+
+    pendingTaggedUsers = [...pendingTaggedUsers, { ...user }];
+    renderTagChipList();
+
+    if (replyTagSearchInput) {
+        replyTagSearchInput.value = "";
+    }
+
+    renderTagResults([]);
+    replyTagSearchInput?.focus();
 });
 
 // 답글 제출은 데모용으로 count만 갱신하고 모달을 닫는다.
@@ -1871,7 +2507,6 @@ const draftBtn = replyModalOverlay?.querySelector("[data-testid='unsentButton']"
 // 초안 뷰 / 작성 뷰 (같은 .tweet-modal 안에서 hidden 토글)
 const draftView = replyModalOverlay?.querySelector(".tweet-modal__draft-view");
 const draftBackBtn = draftView?.querySelector("[data-testid='app-bar-back']");
-const draftTabs = draftView?.querySelectorAll("[data-draft-tab]") ?? [];
 
 // 초안 목록을 열 때도 주소를 바꾸지 않고 화면 전환만 수행한다.
 function openDraftPanel() {
@@ -1907,27 +2542,6 @@ draftBtn?.addEventListener("click", (e) => {
 // 돌아가기 버튼 → 작성 뷰 복귀
 draftBackBtn?.addEventListener("click", () => {
     closeDraftPanel();
-});
-
-// 탭 전환 (전송하지 않은 게시물 / 예약됨)
-draftTabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-        const tabKey = tab.dataset.draftTab;
-
-        draftTabs.forEach((t) => {
-            t.classList.remove("draft-panel__tab--active");
-            t.setAttribute("aria-selected", "false");
-        });
-
-        tab.classList.add("draft-panel__tab--active");
-        tab.setAttribute("aria-selected", "true");
-
-        // 탭 상태는 클래스와 aria만 바꾸고 주소는 건드리지 않는다.
-        // const path = tabKey === "scheduled"
-        //     ? "/compose/post/unsent/scheduled"
-        //     : "/compose/post/unsent/drafts";
-        // history.replaceState({ modal: "drafts", tab: tabKey }, "", path);
-    });
 });
 
 // 브라우저 주소/뒤로가기 연동은 데모 범위 밖이라 비활성화한다.
