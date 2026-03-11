@@ -5,10 +5,260 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- title을  -->
     <title>마이페이지</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../../static/css/mypage/mypage.css">
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <script src="../../static/js/mypage/event.js"></script>
 </head>
 <body>
-    
+    <!-- ================================================
+     X (Twitter) Profile Page - Main & Sidebar
+     왼쪽 사이드바 제외, 가운데+오른쪽 영역
+     ================================================ -->
+<div class="Page-Layout">
+  <!-- ===================== 가운데 메인 컬럼 ===================== -->
+  <div class="Primary-Column">
+    <div class="Primary-Column-Inner">
+      <!-- ====== 상단 고정 헤더 ====== -->
+      <div class="Header-Sticky">
+        <div class="Header-Row">
+          <!-- 뒤로가기 버튼 -->
+          <div class="Header-Back-Wrap">
+            <button class="Header-Back-Btn" data-testid="app-bar-back">
+              <svg viewBox="0 0 24 24" class="Header-Back-Icon">
+                <path d="M7.414 13l5.043 5.04-1.414 1.42L3.586 12l7.457-7.46 1.414 1.42L7.414 11H21v2H7.414z"></path>
+              </svg>
+            </button>
+          </div>
+          <!-- 제목 영역 (이름 + 게시물수) -->
+          <div class="Header-Title-Container">
+            <div class="Header-Name-Row">
+              <span class="Header-Name-Text">JeongSIk Lee</span>
+            </div>
+            <div class="Header-Post-Count">
+              <span class="Header-Post-Count-Text">0 게시물</span>
+            </div>
+          </div>
+          <!-- 검색 버튼 -->
+          <div class="Header-Actions-Area">
+            <button class="Header-Search-Btn">
+              <svg viewBox="0 0 24 24" class="Header-Search-Icon">
+                <path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <!-- 새 게시물 알림 -->
+        <div class="New-Posts-Banner" aria-label="새 게시물을 사용할 수 있습니다.">
+          <div class="New-Posts-Label" data-testid="pillLabel">새 게시물 보기</div>
+        </div>
+      </div>
+      <!-- ====== 프로필 섹션 ====== -->
+      <div class="Profile-Section">
+        <!-- 커버 배너 -->
+        <div class="Profile-Banner"></div>
+        <!-- 아바타 + 수정버튼 Row -->
+        <div class="Profile-Avatar-Row">
+          <div class="Profile-Avatar-Container" data-testid="UserAvatar-Container-JeongSIkLe247">
+            <div class="Profile-Avatar-Img-Wrap">
+              <div class="Profile-Avatar-Circle">
+                <img src="" alt="프로필 이미지" class="Profile-Avatar-Img" />
+              </div>
+            </div>
+          </div>
+          <div class="Profile-Edit-Wrap">
+            <a href="/settings/profile" class="Profile-Edit-Btn" data-testid="editProfileButton">
+              <span class="Profile-Edit-Btn-Text">프로필 수정</span>
+            </a>
+          </div>
+        </div>
+        <!-- 이름 + 핸들 -->
+        <div class="Profile-Name-Block" data-testid="UserName">
+          <div class="Profile-Display-Name-Row">
+            <span class="Profile-Display-Name">JeongSIk Lee</span>
+          </div>
+          <div class="Profile-Handle-Row">
+            <span class="Profile-Handle-Text">@JeongSIkLe247</span>
+          </div>
+        </div>
+        <!-- 소개글 -->
+        <div class="Profile-Description" data-testid="UserDescription">
+          <span class="Profile-Description-Text">ㅁㄴㅇㅁㄴㅇㅁㄴㅇ</span>
+        </div>
+        <!-- 메타 정보 (가입일 등) -->
+        <div class="Profile-Meta" data-testid="UserProfileHeader_Items">
+          <a href="/JeongSIkLe247" class="Profile-Join-Date" data-testid="UserJoinDate">
+            가입일: 2026년 3월
+          </a>
+        </div>
+        <!-- 팔로우 카운트 -->
+        <div class="Profile-Follow-Row">
+          <a href="/JeongSIkLe247/following" class="Profile-Follow-Link">
+            <span class="Profile-Follow-Count">4</span>
+            <span class="Profile-Follow-Label">팔로우 중</span>
+          </a>
+          <a href="/JeongSIkLe247/followers" class="Profile-Follow-Link">
+            <span class="Profile-Follow-Count">4</span>
+            <span class="Profile-Follow-Label">팔로워</span>
+          </a>
+        </div>
+      </div>
+      <!-- /Profile-Section -->
+      <!-- ====== 탭 네비게이션 ====== -->
+      <nav class="Profile-Nav">
+        <div class="Profile-Nav-Scroll">
+          <div role="tablist" class="Profile-Tab-List">
+            <!-- 탭 아이템 (선택됨) -->
+            <a href="/JeongSIkLe247" role="tab" aria-selected="true" class="Profile-Tab-Item Profile-Tab-Item--active">
+              <div class="Profile-Tab-Item-Inner">
+                <div class="Profile-Tab-Content-Row">
+                  <span class="Profile-Tab-Text Profile-Tab-Text--active">게시물</span>
+                  <div class="Profile-Tab-Indicator"></div>
+                </div>
+              </div>
+            </a>
+            <!-- 탭 아이템 (비선택) -->
+            <a href="/JeongSIkLe247/with_replies" role="tab" aria-selected="false" class="Profile-Tab-Item">
+              <div class="Profile-Tab-Item-Inner">
+                <div class="Profile-Tab-Content-Row">
+                  <span class="Profile-Tab-Text">답글</span>
+                  <div class="Profile-Tab-Indicator Profile-Tab-Indicator--hidden"></div>
+                </div>
+              </div>
+            </a>
+            <a href="/JeongSIkLe247/highlights" role="tab" aria-selected="false" class="Profile-Tab-Item">
+              <div class="Profile-Tab-Item-Inner">
+                <div class="Profile-Tab-Content-Row">
+                  <span class="Profile-Tab-Text">하이라이트</span>
+                  <div class="Profile-Tab-Indicator Profile-Tab-Indicator--hidden"></div>
+                </div>
+              </div>
+            </a>
+            <a href="/JeongSIkLe247/articles" role="tab" aria-selected="false" class="Profile-Tab-Item">
+              <div class="Profile-Tab-Item-Inner">
+                <div class="Profile-Tab-Content-Row">
+                  <span class="Profile-Tab-Text">아티클</span>
+                  <div class="Profile-Tab-Indicator Profile-Tab-Indicator--hidden"></div>
+                </div>
+              </div>
+            </a>
+            <a href="/JeongSIkLe247/media" role="tab" aria-selected="false" class="Profile-Tab-Item">
+              <div class="Profile-Tab-Item-Inner">
+                <div class="Profile-Tab-Content-Row">
+                  <span class="Profile-Tab-Text">미디어</span>
+                  <div class="Profile-Tab-Indicator Profile-Tab-Indicator--hidden"></div>
+                </div>
+              </div>
+            </a>
+            <a href="/JeongSIkLe247/likes" role="tab" aria-selected="false" class="Profile-Tab-Item">
+              <div class="Profile-Tab-Item-Inner">
+                <div class="Profile-Tab-Content-Row">
+                  <span class="Profile-Tab-Text">마음에 들어요</span>
+                  <div class="Profile-Tab-Indicator Profile-Tab-Indicator--hidden"></div>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </nav>
+      <!-- /Profile-Nav -->
+      <!-- ====== 본문 콘텐츠 (게시물 없음 안내) ====== -->
+      <section class="Profile-Content">
+        <h1 class="Profile-Content-Heading-Hidden">타임라인: JeongSIk Lee</h1>
+        <div class="Profile-Content-List">
+          <div class="Profile-Empty-State">
+            <span class="Profile-Empty-Title">시작해 보겠습니다</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <!-- /Primary-Column -->
+  <!-- ===================== 오른쪽 사이드바 ===================== -->
+  <div class="Sidebar-Column" data-testid="sidebarColumn">
+    <div class="Sidebar-Inner">
+      <!-- 검색창 (fixed) -->
+      <div class="Sidebar-Search-Fixed">
+        <div class="Sidebar-Search-Wrap">
+          <form class="Sidebar-Search-Form" action="/search" method="GET">
+            <div class="Sidebar-Search-Icon-Wrap">
+              <svg viewBox="0 0 24 24" class="Sidebar-Search-Icon-Svg">
+                <path d="..."></path>
+              </svg>
+            </div>
+            <input
+              type="text"
+              class="Sidebar-Search-Input"
+              data-testid="SearchBox_Search_Input"
+              placeholder="검색"
+            />
+          </form>
+        </div>
+      </div>
+      <!-- ====== 추천 팔로우 카드 ====== -->
+      <div class="Sidebar-Card">
+        <div class="Sidebar-Card-Header">
+          <span class="Sidebar-Card-Title">내가 좋아할 만한 콘텐츠</span>
+        </div>
+        <!-- 추천 유저 아이템 -->
+        <div class="Sidebar-User-Cell" data-testid="UserCell">
+          <a href="/Jaemyung_Lee" class="Sidebar-User-Avatar-Link">
+            <div class="Sidebar-User-Avatar-Circle">
+              <img src="" alt="이재명" class="Sidebar-User-Avatar-Img" />
+            </div>
+          </a>
+          <div class="Sidebar-User-Info">
+            <span class="Sidebar-User-Name">이재명</span>
+            <span class="Sidebar-User-Handle">@Jaemyung_Lee</span>
+          </div>
+          <button class="Sidebar-Follow-Btn">
+            <span class="Sidebar-Follow-Btn-Text">팔로우</span>
+          </button>
+        </div>
+        <div class="Sidebar-User-Cell" data-testid="UserCell">
+          <a href="/Happy48791" class="Sidebar-User-Avatar-Link">
+            <div class="Sidebar-User-Avatar-Circle">
+              <img src="" alt="살림하는 도로로" class="Sidebar-User-Avatar-Img" />
+            </div>
+          </a>
+          <div class="Sidebar-User-Info">
+            <span class="Sidebar-User-Name">살림하는 도로로</span>
+            <span class="Sidebar-User-Handle">@Happy48791</span>
+          </div>
+          <button class="Sidebar-Follow-Btn">
+            <span class="Sidebar-Follow-Btn-Text">팔로우</span>
+          </button>
+        </div>
+        <div class="Sidebar-Card-More">
+          <a href="/i/connect_people" class="Sidebar-Card-More-Link">더 보기</a>
+        </div>
+      </div>
+      <!-- ====== 트렌드 카드 ====== -->
+      <div class="Sidebar-Card">
+        <div class="Sidebar-Card-Header">
+          <span class="Sidebar-Card-Title">무슨 일이 일어나고 있나요?</span>
+        </div>
+        <!-- 트렌드 아이템 -->
+        <div class="Sidebar-Trend-Item">
+          <div class="Sidebar-Trend-Item-Content">
+            <div class="Sidebar-Trend-Meta">
+              <span class="Sidebar-Trend-Category">대한민국에서 트렌드 중</span>
+            </div>
+            <span class="Sidebar-Trend-Name">이회송 탈퇴</span>
+          </div>
+          <button class="Sidebar-Trend-More-Btn" aria-label="더 보기">
+            <svg viewBox="0 0 24 24" class="Sidebar-Trend-More-Icon">
+              <path d="M3 12c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm9 2c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm7 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="Sidebar-Card-More">
+          <a href="/explore" class="Sidebar-Card-More-Link">더 보기</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- /Sidebar-Column -->
+</div>
+<!-- /Page-Layout -->
 </body>
 </html>

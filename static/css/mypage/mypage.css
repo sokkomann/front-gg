@@ -1,0 +1,704 @@
+/* ============================================================
+   X (Twitter) Profile Page — 메인 + 사이드바 CSS
+   Tailwind 없이, 각 class에 실측 computed style 기반으로 정리
+   중복/충돌 제거, 기본값(0px, auto, normal 등) 생략
+   ============================================================ */
+/* ── 전역 기본 ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+body {
+  font-family: TwitterChirp, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgb(15, 20, 26);
+  background-color: rgb(255, 255, 255);
+}
+/* ============================================================
+   레이아웃 래퍼
+   ============================================================ */
+/* 전체 페이지 레이아웃 (좌 사이드바 제외) */
+.Page-Layout {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+/* ============================================================
+   PRIMARY COLUMN (가운데 메인 컬럼)
+   ============================================================ */
+.Primary-Column {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 1 0 auto;
+  width: 600px;
+  max-width: 600px;
+  position: relative;
+  z-index: 1;
+  background-color: rgb(255, 255, 255);
+  border-right: 1px solid rgb(239, 243, 244);
+  border-left: 1px solid rgb(239, 243, 244);
+  overflow: visible;
+}
+.Primary-Column-Inner {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: relative;
+}
+/* ============================================================
+   HEADER (상단 고정 헤더)
+   ============================================================ */
+.Header-Sticky {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: sticky;
+  top: -0.5px;
+  z-index: 3;
+  width: 100%;
+  /* 반투명 배경 처리 */
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+}
+.Header-Row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  height: 53px;
+  padding: 0 16px;
+}
+/* 뒤로가기 버튼 래퍼 */
+.Header-Back-Wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  justify-content: center;
+}
+.Header-Back-Btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  margin-left: -8px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  color: rgb(15, 20, 26);
+}
+.Header-Back-Btn:hover {
+  background-color: rgba(15, 20, 26, 0.1);
+}
+.Header-Back-Icon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+/* 제목 영역 */
+.Header-Title-Container {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  align-items: stretch;
+  justify-content: center;
+  min-width: 0;
+  height: 53px;
+  padding: 0 8px;
+}
+.Header-Name-Row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 0 1 auto;
+}
+.Header-Name-Text {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 24px;
+  color: rgb(15, 20, 25);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.Header-Post-Count {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.Header-Post-Count-Text {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 16px;
+  color: rgb(83, 100, 113);
+}
+/* 검색 버튼 영역 */
+.Header-Actions-Area {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 56px;
+}
+.Header-Search-Btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  color: rgb(15, 20, 26);
+}
+.Header-Search-Btn:hover {
+  background-color: rgba(15, 20, 26, 0.1);
+}
+.Header-Search-Icon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+/* 새 게시물 배너 */
+.New-Posts-Banner {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  position: absolute;
+  top: 53px;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+.New-Posts-Label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  background-color: rgb(29, 155, 240);
+  color: rgb(255, 255, 255);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  pointer-events: auto;
+}
+/* ============================================================
+   PROFILE SECTION (프로필 헤더)
+   ============================================================ */
+.Profile-Section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+/* 커버 배너 이미지 */
+.Profile-Banner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 200px;
+  background-color: rgb(207, 217, 222);
+  overflow: hidden;
+}
+/* 아바타 + 수정 버튼 행 */
+.Profile-Avatar-Row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0 16px 12px;
+}
+/* 아바타 컨테이너 */
+.Profile-Avatar-Container {
+  display: block;
+  position: relative;
+  width: 141px;
+  height: 141px;
+  min-width: 48px;
+  margin-top: -85px;
+  margin-bottom: 12px;
+}
+.Profile-Avatar-Img-Wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
+}
+.Profile-Avatar-Circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 141px;
+  height: 141px;
+  border-radius: 50%;
+  border: 4px solid rgb(255, 255, 255);
+  overflow: hidden;
+  background-color: rgb(207, 217, 222);
+}
+.Profile-Avatar-Img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+/* 프로필 수정 버튼 */
+.Profile-Edit-Wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  padding-top: 12px;
+}
+.Profile-Edit-Btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  min-height: 36px;
+  min-width: 36px;
+  padding: 0 16px;
+  margin-bottom: 12px;
+  background-color: transparent;
+  border: 1px solid rgb(207, 217, 222);
+  border-radius: 9999px;
+  cursor: pointer;
+  color: rgb(15, 20, 26);
+  text-decoration: none;
+}
+.Profile-Edit-Btn:hover {
+  background-color: rgba(15, 20, 26, 0.05);
+}
+.Profile-Edit-Btn-Text {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 20px;
+  white-space: nowrap;
+}
+/* 이름 + 핸들 블록 */
+.Profile-Name-Block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0 16px 4px;
+}
+.Profile-Display-Name-Row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 0 1 auto;
+}
+.Profile-Display-Name {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 24px;
+  color: rgb(15, 20, 25);
+}
+.Profile-Handle-Row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.Profile-Handle-Text {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 20px;
+  color: rgb(83, 100, 113);
+}
+/* 소개글 */
+.Profile-Description {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 4px 16px 8px;
+}
+.Profile-Description-Text {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 22.5px;
+  color: rgb(15, 20, 26);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+/* 메타 정보 (가입일) */
+.Profile-Meta {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 16px;
+}
+.Profile-Join-Date {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 20px;
+  color: rgb(83, 100, 113);
+  text-decoration: none;
+}
+.Profile-Join-Date:hover {
+  text-decoration: underline;
+}
+/* 팔로우 카운트 행 */
+.Profile-Follow-Row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 16px 12px;
+}
+.Profile-Follow-Link {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 20px;
+  color: rgb(15, 20, 25);
+  text-decoration: none;
+}
+.Profile-Follow-Link:hover .Profile-Follow-Label {
+  text-decoration: underline;
+}
+.Profile-Follow-Count {
+  font-size: 15px;
+  font-weight: 700;
+  color: rgb(15, 20, 25);
+}
+.Profile-Follow-Label {
+  font-size: 15px;
+  font-weight: 400;
+  color: rgb(83, 100, 113);
+}
+/* ============================================================
+   PROFILE TAB NAVIGATION
+   ============================================================ */
+.Profile-Nav {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  height: 54px;
+  border-bottom: 1px solid rgb(239, 243, 244);
+  overflow: hidden;
+}
+.Profile-Nav-Scroll {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.Profile-Nav-Scroll::-webkit-scrollbar {
+  display: none;
+}
+.Profile-Tab-List {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  flex: 1 1 auto;
+  height: 53px;
+}
+/* 탭 아이템 링크 */
+.Profile-Tab-Item {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: stretch;
+  height: 53px;
+  background-color: transparent;
+  text-decoration: none;
+  color: rgb(15, 20, 26);
+  cursor: pointer;
+}
+.Profile-Tab-Item:hover {
+  background-color: rgba(15, 20, 26, 0.05);
+}
+.Profile-Tab-Item-Inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+}
+.Profile-Tab-Content-Row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 16px 0;
+}
+/* 탭 텍스트 */
+.Profile-Tab-Text {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 20px;
+  color: rgb(83, 100, 113);
+  white-space: nowrap;
+}
+.Profile-Tab-Text--active {
+  font-weight: 700;
+  color: rgb(15, 20, 26);
+}
+/* 탭 하단 인디케이터 (파란 선) */
+.Profile-Tab-Indicator {
+  position: absolute;
+  bottom: -16px;
+  left: -8px;
+  right: -8px;
+  height: 4px;
+  border-radius: 9999px;
+  background-color: rgb(29, 155, 240);
+}
+.Profile-Tab-Indicator--hidden {
+  display: none;
+}
+/* ============================================================
+   PROFILE CONTENT (본문)
+   ============================================================ */
+.Profile-Content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 0 0 auto;
+}
+.Profile-Content-Heading-Hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.Profile-Content-List {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.Profile-Empty-State {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+.Profile-Empty-Title {
+  font-size: 31px;
+  font-weight: 700;
+  line-height: 36px;
+  color: rgb(15, 20, 26);
+}
+/* ============================================================
+   SIDEBAR COLUMN (오른쪽 사이드바)
+   ============================================================ */
+.Sidebar-Column {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  align-items: stretch;
+  width: 290px;
+  margin-right: 10px;
+  position: relative;
+}
+.Sidebar-Inner {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-top: 66px; /* 검색창 fixed 높이 만큼 오프셋 */
+}
+/* ── 검색창 (fixed) ── */
+.Sidebar-Search-Fixed {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  width: 290px;
+  height: 53px;
+  padding: 0;
+  background-color: rgb(255, 255, 255);
+  z-index: 2;
+  margin-bottom: 12px;
+}
+.Sidebar-Search-Wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  height: 42px;
+  background-color: rgb(239, 243, 244);
+  border: 2px solid transparent;
+  border-radius: 9999px;
+  padding: 0 16px;
+  transition: border-color 0.2s;
+}
+.Sidebar-Search-Wrap:focus-within {
+  background-color: rgb(255, 255, 255);
+  border-color: rgb(29, 155, 240);
+}
+.Sidebar-Search-Form {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+.Sidebar-Search-Icon-Wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+  color: rgb(83, 100, 113);
+  flex-shrink: 0;
+}
+.Sidebar-Search-Icon-Svg {
+  width: 18.75px;
+  height: 18.75px;
+  fill: currentColor;
+}
+.Sidebar-Search-Input {
+  display: block;
+  flex: 1 1 auto;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 4px;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 20px;
+  color: rgb(15, 20, 25);
+}
+.Sidebar-Search-Input::placeholder {
+  color: rgb(83, 100, 113);
+}
+/* ── 사이드바 카드 공통 ── */
+.Sidebar-Card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 0 0 auto;
+  width: 290px;
+  background-color: rgb(255, 255, 255);
+  border: 1px solid rgb(239, 243, 244);
+  border-radius: 16px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.Sidebar-Card-Header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 16px;
+}
+.Sidebar-Card-Title {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 24px;
+  color: rgb(15, 20, 26);
+}
+/* 사이드바 카드 "더 보기" */
+.Sidebar-Card-More {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 16px;
+}
+.Sidebar-Card-More-Link {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 20px;
+  color: rgb(29, 155, 240);
+  text-decoration: none;
+}
+.Sidebar-Card-More-Link:hover {
+  text-decoration: underline;
+}
+/* ── UserCell (추천 팔로우 유저 아이템) ── */
+.Sidebar-User-Cell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+.Sidebar-User-Cell:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+.Sidebar-User-Avatar-Link {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  margin-right: 12px;
+  text-decoration: none;
+}
+.Sidebar-User-Avatar-Circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: rgb(207, 217, 222);
+}
+.Sidebar-User-Avatar-Img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.Sidebar-User-Info {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.Sidebar-User-Name {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 20px;
+  color: rgb(15, 20, 25);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.Sidebar-User-Handle {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 20px;
+  color: rgb(83, 100, 113);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 사이드바 팔로우 버튼 */
+.Sidebar-Follow-Btn {
+  display: flex;
+}
