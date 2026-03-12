@@ -1,38 +1,35 @@
-/* ============================================================
-   X (Twitter) Profile Page — 메인 + 사이드바 CSS
-   Tailwind 없이, 각 class에 실측 computed style 기반으로 정리
-   중복/충돌 제거, 기본값(0px, auto, normal 등) 생략
-   ============================================================ */
-/* ── 전역 기본 ── */
+
 *, *::before, *::after {
-  box-sizing: border-box;
+    box-sizing: border-box;
 }
+
 body {
-  font-family: TwitterChirp, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 15px;
-  line-height: 1.5;
-  color: rgb(15, 20, 26);
-  background-color: rgb(255, 255, 255);
+    font-family: TwitterChirp, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+    color: rgb(15, 20, 26);
+    background-color: rgb(255, 255, 255);
 }
-/* ============================================================
-   레이아웃 래퍼
-   ============================================================ */
-/* 전체 페이지 레이아웃 (좌 사이드바 제외) */
+
 .Page-Layout {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  margin: 0 auto;
+  width: 100%;
+  gap: 20px;
+  justify-content: center;
   min-height: 100vh;
 }
-/* ============================================================
-   PRIMARY COLUMN (가운데 메인 컬럼)
-   ============================================================ */
+
 .Primary-Column {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   flex: 1 0 auto;
   width: 600px;
+  height: 100%;
   max-width: 600px;
   position: relative;
   z-index: 1;
@@ -46,10 +43,9 @@ body {
   flex-direction: column;
   align-items: stretch;
   position: relative;
+  min-height: 100vh;
 }
-/* ============================================================
-   HEADER (상단 고정 헤더)
-   ============================================================ */
+
 .Header-Sticky {
   display: flex;
   flex-direction: column;
@@ -58,7 +54,6 @@ body {
   top: -0.5px;
   z-index: 3;
   width: 100%;
-  /* 반투명 배경 처리 */
   background-color: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
 }
@@ -70,7 +65,7 @@ body {
   height: 53px;
   padding: 0 16px;
 }
-/* 뒤로가기 버튼 래퍼 */
+
 .Header-Back-Wrap {
   display: flex;
   flex-direction: column;
@@ -78,6 +73,7 @@ body {
   align-items: flex-start;
   justify-content: center;
 }
+
 .Header-Back-Btn {
   display: flex;
   align-items: center;
@@ -101,7 +97,7 @@ body {
   height: 20px;
   fill: currentColor;
 }
-/* 제목 영역 */
+
 .Header-Title-Container {
   display: flex;
   flex-direction: column;
@@ -138,7 +134,7 @@ body {
   line-height: 16px;
   color: rgb(83, 100, 113);
 }
-/* 검색 버튼 영역 */
+
 .Header-Actions-Area {
   display: flex;
   flex-direction: column;
@@ -169,7 +165,6 @@ body {
   height: 20px;
   fill: currentColor;
 }
-/* 새 게시물 배너 */
 .New-Posts-Banner {
   display: flex;
   flex-direction: row;
@@ -195,15 +190,12 @@ body {
   cursor: pointer;
   pointer-events: auto;
 }
-/* ============================================================
-   PROFILE SECTION (프로필 헤더)
-   ============================================================ */
+
 .Profile-Section {
   display: flex;
   flex-direction: column;
   align-items: stretch;
 }
-/* 커버 배너 이미지 */
 .Profile-Banner {
   display: flex;
   flex-direction: column;
@@ -212,7 +204,6 @@ body {
   background-color: rgb(207, 217, 222);
   overflow: hidden;
 }
-/* 아바타 + 수정 버튼 행 */
 .Profile-Avatar-Row {
   display: flex;
   flex-direction: row;
@@ -220,7 +211,6 @@ body {
   justify-content: space-between;
   padding: 0 16px 12px;
 }
-/* 아바타 컨테이너 */
 .Profile-Avatar-Container {
   display: block;
   position: relative;
@@ -254,7 +244,6 @@ body {
   object-fit: cover;
   border-radius: 50%;
 }
-/* 프로필 수정 버튼 */
 .Profile-Edit-Wrap {
   display: flex;
   flex-direction: row;
@@ -286,7 +275,6 @@ body {
   line-height: 20px;
   white-space: nowrap;
 }
-/* 이름 + 핸들 블록 */
 .Profile-Name-Block {
   display: flex;
   flex-direction: column;
@@ -316,7 +304,6 @@ body {
   line-height: 20px;
   color: rgb(83, 100, 113);
 }
-/* 소개글 */
 .Profile-Description {
   display: flex;
   flex-direction: column;
@@ -331,7 +318,6 @@ body {
   white-space: pre-wrap;
   word-break: break-word;
 }
-/* 메타 정보 (가입일) */
 .Profile-Meta {
   display: flex;
   flex-direction: row;
@@ -354,7 +340,6 @@ body {
 .Profile-Join-Date:hover {
   text-decoration: underline;
 }
-/* 팔로우 카운트 행 */
 .Profile-Follow-Row {
   display: flex;
   flex-direction: row;
@@ -385,9 +370,7 @@ body {
   font-weight: 400;
   color: rgb(83, 100, 113);
 }
-/* ============================================================
-   PROFILE TAB NAVIGATION
-   ============================================================ */
+
 .Profile-Nav {
   display: flex;
   flex-direction: row;
@@ -415,7 +398,6 @@ body {
   flex: 1 1 auto;
   height: 53px;
 }
-/* 탭 아이템 링크 */
 .Profile-Tab-Item {
   display: flex;
   flex-direction: column;
@@ -428,6 +410,7 @@ body {
   color: rgb(15, 20, 26);
   cursor: pointer;
 }
+
 .Profile-Tab-Item:hover {
   background-color: rgba(15, 20, 26, 0.05);
 }
@@ -448,7 +431,6 @@ body {
   position: relative;
   padding: 16px 0;
 }
-/* 탭 텍스트 */
 .Profile-Tab-Text {
   font-size: 15px;
   font-weight: 400;
@@ -456,39 +438,28 @@ body {
   color: rgb(83, 100, 113);
   white-space: nowrap;
 }
-.Profile-Tab-Text--active {
-  font-weight: 700;
-  color: rgb(15, 20, 26);
+
+.selected {
+    color: rgb(15, 20, 26);
+    font-weight: 700;
 }
-/* 탭 하단 인디케이터 (파란 선) */
+
 .Profile-Tab-Indicator {
   position: absolute;
-  bottom: -16px;
+  bottom: -1px;
   left: -8px;
   right: -8px;
   height: 4px;
   border-radius: 9999px;
   background-color: rgb(29, 155, 240);
 }
-.Profile-Tab-Indicator--hidden {
-  display: none;
-}
-/* ============================================================
-   PROFILE CONTENT (본문)
-   ============================================================ */
+
 .Profile-Content {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   flex: 0 0 auto;
-}
-.Profile-Content-Heading-Hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
+  min-height: 0;
 }
 .Profile-Content-List {
   display: flex;
@@ -503,14 +474,12 @@ body {
   padding: 32px 16px;
 }
 .Profile-Empty-Title {
-  font-size: 31px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 36px;
   color: rgb(15, 20, 26);
 }
-/* ============================================================
-   SIDEBAR COLUMN (오른쪽 사이드바)
-   ============================================================ */
+
 .Sidebar-Column {
   display: flex;
   flex-direction: column;
@@ -524,9 +493,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding-top: 66px; /* 검색창 fixed 높이 만큼 오프셋 */
+  padding-top: 66px;
 }
-/* ── 검색창 (fixed) ── */
 .Sidebar-Search-Fixed {
   display: flex;
   flex-direction: row;
@@ -595,7 +563,6 @@ body {
 .Sidebar-Search-Input::placeholder {
   color: rgb(83, 100, 113);
 }
-/* ── 사이드바 카드 공통 ── */
 .Sidebar-Card {
   display: flex;
   flex-direction: column;
@@ -620,7 +587,6 @@ body {
   line-height: 24px;
   color: rgb(15, 20, 26);
 }
-/* 사이드바 카드 "더 보기" */
 .Sidebar-Card-More {
   display: flex;
   flex-direction: row;
@@ -637,7 +603,6 @@ body {
 .Sidebar-Card-More-Link:hover {
   text-decoration: underline;
 }
-/* ── UserCell (추천 팔로우 유저 아이템) ── */
 .Sidebar-User-Cell {
   display: flex;
   flex-direction: row;
@@ -698,7 +663,180 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* 사이드바 팔로우 버튼 */
 .Sidebar-Follow-Btn {
   display: flex;
+}
+
+/* 게시글 하나 css */
+.Post-Card {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border-bottom: 1px solid #eff3f4;
+}
+
+.Post-Card:hover {
+    background: #f7f9f9;
+}
+
+.Post-Avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #cfe8fc;
+    color: #1d9bf0;
+    font-weight: 700;
+}
+
+.Post-Avatar--Image {
+    overflow: hidden;
+    background: #eff3f4;
+}
+
+.Post-Avatar-Image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.Post-Body {
+    flex: 1;
+    min-width: 0;
+}
+
+.Post-Header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.Post-Identity {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    align-items: center;
+    min-width: 0;
+}
+
+.Post-Name {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.Post-Handle,
+.Post-Time {
+    color: #536471;
+    font-size: 14px;
+}
+
+.Post-More-Button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #536471;
+    cursor: pointer;
+}
+
+.Post-More-Button:hover {
+    background: rgba(29, 155, 240, 0.12);
+    color: #1d9bf0;
+}
+
+.Post-More-Icon {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+
+.Post-Text {
+    margin: 8px 0 12px;
+    font-size: 15px;
+    line-height: 20px;
+}
+
+.Post-Metrics {
+    margin-top: 8px;
+}
+
+.Post-Action-Bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+}
+
+.Post-Action-Btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    height: 34px;
+    padding: 0 6px;
+    border: 0;
+    background: transparent;
+    border-radius: 9999px;
+    color: #536471;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.Post-Action-Btn:hover {
+    background-color: rgba(29, 155, 240, 0.1);
+    color: #1d9bf0;
+}
+
+.Post-Action-Btn.Like:hover {
+    background-color: rgba(249, 24, 128, 0.1);
+    color: #f91880;
+}
+
+.Post-Action-Btn.Like.active {
+    color: #f91880;
+}
+
+.Post-Action-Btn.Bookmark:hover {
+    background-color: rgba(29, 155, 240, 0.1);
+    color: #1d9bf0;
+}
+
+.Post-Action-Btn.Bookmark.active {
+    color: #1d9bf0;
+}
+
+.Post-Action-Icon {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
+.Post-Action-Count {
+    font-size: 13px;
+    line-height: 1;
+}
+
+.Post-Action-Right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+}
+
+/* 토글용 css */
+.off {
+    display: none;
 }
