@@ -83,8 +83,6 @@
 
     .each-box { margin-bottom: 4px; }
 
-    .haksamo { width: 16px; height: 16px; }
-    
     .box-title {
       font-size: 11px;
       font-weight: 700;
@@ -95,28 +93,6 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-    }
-
-    .news-settings-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
-      border: none;
-      background: transparent;
-      border-radius: 6px;
-      cursor: pointer;
-      padding: 0;
-      transition: background 0.15s;
-    }
-
-    .news-settings-btn:hover { background: #eff3f4; }
-
-    .news-settings-btn img {
-      width: 15px;
-      height: 15px;
-      opacity: 0.6;
     }
 
     /* 토글 스위치 */
@@ -184,6 +160,20 @@
     }
 
     .each-menu:hover { background: #f7f9f9; }
+
+    .each-menu-auto {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      font-size: 15px;
+      font-weight: 400;
+      color: #0f1419;
+      cursor: pointer;
+      border-left: 7px solid transparent;
+      transition: background 0.1s;
+    }
+    .each-menu-auto:hover { background: #f7f9f9; }
 
     .each-menu.active {  
         border-left-color: #1d9bf0; 
@@ -876,57 +866,6 @@
     }
     .filter-select:focus { border-color: #1d9bf0; }
 
-    /* 신고 모달 */
-    .review-section { margin-bottom: 20px; }
-    .review-section-title {
-      font-size: 12px; 
-      font-weight: 700; 
-      color: #536471;
-      text-transform: uppercase; 
-      letter-spacing: 0.05em; 
-      margin-bottom: 10px;
-    }
-    .review-card {
-      background: #f7f9f9; 
-      border: 1px solid #eff3f4;
-      border-radius: 10px; 
-      overflow: hidden;
-    }
-    .review-row {
-      display: flex; 
-      align-items: flex-start;
-      padding: 10px 16px; 
-      border-bottom: 1px solid #eff3f4; 
-      font-size: 14px;
-    }
-    .review-row:last-child { border-bottom: none; }
-    .review-label { 
-      min-width: 90px; 
-      font-weight: 600; 
-      color: #536471; 
-    }
-    .review-value { 
-      color: #0f1419; 
-      line-height: 1.5;
-    }
-    .reason-box {
-      border-radius: 8px; 
-      font-size: 14px; 
-      line-height: 1.6;
-    } 
-
-    .action-buttons { 
-      display: flex; 
-      gap: 10px; 
-      margin-top: 4px; 
-    }
-
-    .btn-process {
-       background: #0f1419;
-       color: #fff; }
-
-    .btn-process:hover { background: #272c30; }
-
     /* 신고 모달 첨부 이미지 */
     .report-attach-imgs {
         display: flex;
@@ -949,7 +888,7 @@
 
     .report-attach-thumb:hover {
         border-color: #536471;
-        opacity: 0.82;
+        opacity: 0.8;
     }
 
     /* 이미지 뷰어 오버레이 */
@@ -1067,6 +1006,7 @@
         grid-template-columns: repeat(4, 1fr);
         gap: 12px;
         margin-top: 16px;
+        margin-bottom: 12px;
     }
 
     .stats-data-card {

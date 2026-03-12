@@ -659,7 +659,6 @@ modalImageViewer.addEventListener("click", (e) => {
 
 // 12. 뉴스 자동등록 설정 모달
 newsSettingsBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
     modalNewsAutoSettings.classList.remove("off");
 });
 
@@ -877,11 +876,11 @@ function drawPostMonthly() {
 function drawPostCategory() {
     let rows;
     if (postCategoryPeriod === '7d') {
-        rows = [['원자재',12,'#0f1419'],['완제품',9,'#536471'],['a제품',6,'#536471'],['기계/설비',5,'#536471'],['화학품',3,'#536471'],['식품',3,'#536471'],['기타',13,'#cfd9de']];
+        rows = [['원자재',12,'#0f1419'],['땡땡제품',9,'#536471'],['a제품',6,'#536471'],['기계/설비',5,'#536471'],['화학품',3,'#536471'],['식품',3,'#536471'],['기타',13,'#cfd9de']];
     } else if (postCategoryPeriod === '30d') {
-        rows = [['원자재',52,'#0f1419'],['완제품',38,'#536471'],['a제품',25,'#536471'],['기계/설비',22,'#536471'],['화학품',16,'#536471'],['식품',12,'#536471'],['기타',36,'#cfd9de']];
+        rows = [['원자재',52,'#0f1419'],['땡땡제품',38,'#536471'],['a제품',25,'#536471'],['기계/설비',22,'#536471'],['화학품',16,'#536471'],['식품',12,'#536471'],['기타',36,'#cfd9de']];
     } else {
-        rows = [['원자재',320,'#0f1419'],['완제품',245,'#536471'],['a제품',158,'#536471'],['기계/설비',138,'#536471'],['화학품',100,'#536471'],['식품',76,'#536471'],['기타',149,'#cfd9de']];
+        rows = [['원자재',320,'#0f1419'],['땡땡제품',245,'#536471'],['a제품',158,'#536471'],['기계/설비',138,'#536471'],['화학품',100,'#536471'],['식품',76,'#536471'],['기타',149,'#cfd9de']];
     }
     const data = google.visualization.arrayToDataTable([['카테고리','게시글 수',{role:'style'}]].concat(rows));
     const options = {
@@ -1017,47 +1016,20 @@ portals[8].addEventListener("click", (e) => {
 });
 
 // 필터바 이벤트 (차트별 독립)
-document.querySelectorAll("#filterTrend .stats-filter-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-        document.querySelectorAll("#filterTrend .stats-filter-btn").forEach((b) => { b.classList.remove("active"); });
-        btn.classList.add("active");
-        trendPeriod = btn.dataset.period;
-        if (drawnPortals.has(6)) drawMemberTrend();
+function bindFilter(id, setFn, drawFn) {
+    document.querySelectorAll(`#${id} .stats-filter-btn`).forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            document.querySelectorAll(`#${id} .stats-filter-btn`).forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            setFn(btn.dataset.period);
+            drawFn();
+        });
     });
-});
+}
 
-document.querySelectorAll("#filterHourly .stats-filter-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-        document.querySelectorAll("#filterHourly .stats-filter-btn").forEach((b) => { b.classList.remove("active"); });
-        btn.classList.add("active");
-        hourlyPeriod = btn.dataset.period;
-        if (drawnPortals.has(6)) drawHourly();
-    });
-});
-
-document.querySelectorAll("#filterPostMonthly .stats-filter-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-        document.querySelectorAll("#filterPostMonthly .stats-filter-btn").forEach((b) => { b.classList.remove("active"); });
-        btn.classList.add("active");
-        postMonthlyPeriod = btn.dataset.period;
-        if (drawnPortals.has(7)) drawPostMonthly();
-    });
-});
-
-document.querySelectorAll("#filterPostCategory .stats-filter-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-        document.querySelectorAll("#filterPostCategory .stats-filter-btn").forEach((b) => { b.classList.remove("active"); });
-        btn.classList.add("active");
-        postCategoryPeriod = btn.dataset.period;
-        if (drawnPortals.has(7)) drawPostCategory();
-    });
-});
-
-document.querySelectorAll("#filterReportMonthly .stats-filter-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-        document.querySelectorAll("#filterReportMonthly .stats-filter-btn").forEach((b) => { b.classList.remove("active"); });
-        btn.classList.add("active");
-        reportMonthlyPeriod = btn.dataset.period;
-        if (drawnPortals.has(8)) drawReportMonthly();
-    });
-});
+bindFilter("filterTrend", p => { trendPeriod = p; }, () => { 
+    if (drawnPortals.has(6)) drawMemberTrend(); });
+bindFilter("filterHourly",  p => { hourlyPeriod = p; }, () => { if (drawnPortals.has(6)) drawHourly(); });
+bindFilter("filterPostMonthly", p => { postMonthlyPeriod = p; },  () => { if (drawnPortals.has(7)) drawPostMonthly(); });
+bindFilter("filterPostCategory", p => { postCategoryPeriod = p; }, () => { if (drawnPortals.has(7)) drawPostCategory(); });
+bindFilter("filterReportMonthly", p => { reportMonthlyPeriod = p; },() => { if (drawnPortals.has(8)) drawReportMonthly(); });
