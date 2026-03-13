@@ -207,37 +207,43 @@
                         />
                     </label>
                     <div class="searchPanel" id="searchPanel" hidden>
-                        <!-- 상태1: 입력 없음 + 최근검색 없음 -->
+                        <!-- 1. 입력 전 + 최근검색 없을때 -->
                         <div class="searchPanelEmpty" id="searchPanelEmpty" hidden>
                             <p class="searchPanelText" id="searchPanelText">
                                 인물이나 리스트 또는 키워드를 검색해 보세요
                             </p>
                         </div>
 
-                        <!-- 상태2: 입력 없음 + 최근검색 있음 -->
+                        <!-- 2. 입력 전 + 최근검색 있음 -->
                         <div id="searchRecentSection">
                             <div class="searchRecentHeader">최근 검색</div>
                             <div class="searchResultItem searchResultItem--recent">
-                                <div class="searchResultAvatar searchResultAvatar--recent">&#x2315;</div>
+                                <div class="searchResultAvatar searchResultAvatar--recent">
+
+                                </div>
                                 <div class="searchResultProfile">
-                                    <span class="searchResultName">반도체 ETF</span>
+                                    <span class="searchResultName">최근검색어1</span>
                                 </div>
                             </div>
                             <div class="searchResultItem searchResultItem--recent">
-                                <div class="searchResultAvatar searchResultAvatar--recent">&#x2315;</div>
+                                <div class="searchResultAvatar searchResultAvatar--recent">
+
+                                </div>
                                 <div class="searchResultProfile">
-                                    <span class="searchResultName">삼성전자</span>
+                                    <span class="searchResultName">최근2</span>
                                 </div>
                             </div>
                             <div class="searchResultItem searchResultItem--recent">
-                                <div class="searchResultAvatar searchResultAvatar--recent">&#x2315;</div>
+                                <div class="searchResultAvatar searchResultAvatar--recent">
+
+                                </div>
                                 <div class="searchResultProfile">
-                                    <span class="searchResultName">코스피 200</span>
+                                    <span class="searchResultName">김망고</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- 상태3: 입력 있음 -->
+                        <!-- 3. 입력 있음 -->
                         <div class="searchResults" id="searchResults" hidden>
                             <button class="searchResultTopic" id="searchResultTopic" type="button">
                                 <span class="searchResultIcon" aria-hidden="true">&#x2315;</span>
