@@ -321,6 +321,20 @@ a {
     padding: 4px 0 8px;
 }
 
+.post-detail-actions.tweet-action-bar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: center;
+    gap: 0;
+}
+
+.post-detail-action-slot {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 0;
+}
+
 .post-detail-action-button,
 .tweet-action-btn,
 .post-detail-reply-actions button {
@@ -343,6 +357,12 @@ a {
     min-height: 34px;
 }
 
+.post-detail-actions.tweet-action-bar .post-detail-action-button,
+.post-detail-actions.tweet-action-bar .tweet-action-btn {
+    justify-content: center;
+    padding: 0 8px;
+}
+
 .post-detail-action-button:hover,
 .tweet-action-btn:hover {
     background-color: rgba(29, 155, 240, 0.1);
@@ -358,13 +378,6 @@ a {
 .tweet-action-count {
     font-size: 13px;
     line-height: 1;
-}
-
-.tweet-action-right {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: auto;
 }
 
 .post-detail-action-button--like.active,
@@ -488,20 +501,8 @@ a {
     color: #0f1419;
 }
 
-.post-detail-reply-actions {
-    gap: 32px;
+.post-detail-actions--reply {
     margin-top: 8px;
-}
-
-.post-detail-reply-actions button {
-    gap: 4px;
-}
-
-.post-detail-reply-actions svg {
-    width: 16px;
-    height: 16px;
-    fill: currentColor;
-    flex-shrink: 0;
 }
 
 .post-detail-more-wrap {

@@ -46,12 +46,79 @@ function showTimedToast({
     }, duration);
 }
 
-const {
-    calculateMoreMenuPosition,
-    escapeHtml,
-    getCollapsedPostTextState,
-    parseTwemoji,
-} = window.mainEventHelpers;
+// 템플릿 문자열에 사용자 입력을 섞는 구간이 많아서 최소한의 HTML 이스케이프를
+// 파일 내부에 둔다. 서버 렌더링이나 Spring API 응답을 붙일 때도 같은 규칙으로
+// 재사용할 수 있어 외부 전역 helper 누락으로 전체 스크립트가 죽는 일을 막는다.
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, (character) => {
+        const escapedByCharacter = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+        };
+
+        return escapedByCharacter[character] || character;
+    });
+}
+
+// 더보기 메뉴는 버튼 위치를 기준으로 뜨되 화면 밖으로 밀리면 안 된다.
+// Spring 정적 리소스 배포 환경에서도 추가 의존성 없이 동일 계산을 보장하려고
+// 좌표 계산을 파일 안에 유지한다.
+function calculateMoreMenuPosition({
+    windowWidth,
+    windowHeight,
+    buttonRect,
+    menuWidth,
+    menuHeight,
+    gap = 8,
+    margin = 12,
+}) {
+    const safeMenuWidth = Math.max(0, Number(menuWidth) || 0);
+    const safeMenuHeight = Math.max(0, Number(menuHeight) || 0);
+    const maxLeft = Math.max(margin, windowWidth - safeMenuWidth - margin);
+    const preferredLeft = buttonRect.right - safeMenuWidth;
+    const left = Math.min(maxLeft, Math.max(margin, preferredLeft));
+    const bottomAlignedTop = buttonRect.bottom + gap;
+    const topIfOverflow = buttonRect.top - safeMenuHeight - gap;
+    const top = safeMenuHeight > 0 &&
+        bottomAlignedTop + safeMenuHeight > windowHeight - margin &&
+        topIfOverflow >= margin
+        ? topIfOverflow
+        : Math.max(margin, bottomAlignedTop);
+
+    return { left, top };
+}
+
+// 피드에서는 긴 본문만 접기/펼치기 UI가 필요하다.
+// 이 상태 계산을 분리해 두면 이후 Spring 서버에서 받은 본문 길이 규칙이 바뀌어도
+// DOM 조작부를 건드리지 않고 여기서만 조정할 수 있다.
+function getCollapsedPostTextState(text, maxLength) {
+    const fullText = String(text || "").trim();
+    const safeMaxLength = Math.max(0, Number(maxLength) || 0);
+    const isExpandable = fullText.length > safeMaxLength;
+    const truncatedText = isExpandable
+        ? `${fullText.slice(0, safeMaxLength).trimEnd()}...`
+        : fullText;
+
+    return {
+        fullText,
+        isExpandable,
+        truncatedText,
+    };
+}
+
+// Twemoji는 선택 기능이다. 라이브러리가 늦게 오거나 빠져도 메인 기능은 유지되어야
+// 하므로 안전 래퍼를 둔다. 이후 Spring 템플릿에서 CDN 전략이 바뀌어도 본문 입력과
+// 모달 로직은 계속 동작한다.
+function parseTwemoji(scope) {
+    if (!scope || !window.twemoji) {
+        return;
+    }
+
+    window.twemoji.parse(scope, { folder: "svg", ext: ".svg" });
+}
 
 function buildInitialAvatarDataUri(label) {
     const safeLabel = escapeHtml((label || "?").slice(0, 2));
@@ -5010,7 +5077,10 @@ function setupReplyModal() {
         if (replyMediaAltLabel) {
             replyMediaAltLabel.textContent = label;
         }
-        if (!can && isMediaEditorOpen()) {
+        // 답글 모달은 작성 모달과 스코프가 분리돼 있어서 작성 모달 전용 helper를
+        // 참조하면 즉시 ReferenceError가 난다. 현재 답글 미디어 서브뷰가 실제로
+        // 열려 있는지만 이 함수 안에서 직접 판단해 안전하게 닫는다.
+        if (!can && replyMediaView && !replyMediaView.hidden) {
             closeMediaEditor({ restoreFocus: false, discardChanges: true });
         }
     }

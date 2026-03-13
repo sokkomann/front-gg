@@ -1532,7 +1532,7 @@
                     id="feedSection"
                     aria-label="게시물 목록"
                 >
-                    <article
+                    <div
                         class="postCard"
                         id="postCard101"
                         data-post-id="101"
@@ -1756,9 +1756,9 @@
                                 </div>
                             </footer>
                         </div>
-                    </article>
+                    </div>
 
-                    <article
+                    <div
                         class="postCard"
                         id="postCard202"
                         data-post-id="202"
@@ -2011,9 +2011,9 @@
                                 </div>
                             </footer>
                         </div>
-                    </article>
+                    </div>
 
-                    <article
+                    <div
                         class="postCard"
                         id="postCard203"
                         data-post-id="203"
@@ -2262,9 +2262,9 @@
                                 </div>
                             </footer>
                         </div>
-                    </article>
+                    </div>
 
-                    <article
+                    <div
                         class="postCard"
                         id="postCard204"
                         data-post-id="204"
@@ -2522,7 +2522,7 @@
                                 </div>
                             </footer>
                         </div>
-                    </article>
+                    </div>
 
                     <article
                         class="postCard"
@@ -2756,7 +2756,7 @@
                         </div>
                     </article>
 
-                    <article
+                    <div
                         class="postCard"
                         id="postCard102"
                         data-post-id="102"
@@ -2970,9 +2970,9 @@
                                 </div>
                             </footer>
                         </div>
-                    </article>
+                    </div>
 
-                    <article
+                    <div
                         class="postCard"
                         id="postCard103"
                         data-post-id="103"
@@ -3190,7 +3190,7 @@
                                 </div>
                             </footer>
                         </div>
-                    </article>
+                    </div>
                 </section>
 
                 <section
@@ -3549,7 +3549,7 @@
                         </h2>
 
                         <div class="newsFeedList" id="newsFeedList">
-                            <article class="newsFeedItem" id="newsFeedItem1">
+                            <div class="newsFeedItem" id="newsFeedItem1">
                                 <div class="newsFeedContent">
                                     <h3
                                         class="newsFeedHeadline"
@@ -3566,9 +3566,9 @@
                                         짧은 요약 문장이 이 영역에 표시됩니다.
                                     </p>
                                 </div>
-                            </article>
+                            </div>
 
-                            <article class="newsFeedItem" id="newsFeedItem2">
+                            <div class="newsFeedItem" id="newsFeedItem2">
                                 <div class="newsFeedContent">
                                     <h3
                                         class="newsFeedHeadline"
@@ -3586,9 +3586,9 @@
                                         영역입니다.
                                     </p>
                                 </div>
-                            </article>
+                            </div>
 
-                            <article class="newsFeedItem" id="newsFeedItem3">
+                            <div class="newsFeedItem" id="newsFeedItem3">
                                 <div class="newsFeedContent">
                                     <h3
                                         class="newsFeedHeadline"
@@ -3605,7 +3605,7 @@
                                         상태입니다.
                                     </p>
                                 </div>
-                            </article>
+                            </div>
                         </div>
 
                         <a
@@ -3677,7 +3677,7 @@
                             @CodeKim1218 님에게 보내는 답글
                         </button>
 
-                        <article class="tweet-modal__source-tweet" data-testid="tweet">
+                        <div class="tweet-modal__source-tweet" data-testid="tweet">
                             <img src="" alt="" class="tweet-modal__source-avatar" />
                             <div class="tweet-modal__source-body">
                                 <div class="tweet-modal__source-meta">
@@ -3688,7 +3688,7 @@
                                 </div>
                                 <p class="tweet-modal__source-text">게시물에 답글을 작성해 보세요.</p>
                             </div>
-                        </article>
+                        </div>
 
                         <div class="tweet-modal__composer">
                             <img src="" alt="" class="tweet-modal__avatar-image" data-reply-avatar />
@@ -4027,10 +4027,7 @@
             </div>
         </div>
         <div id="layers"></div>
-        <script
-            src="https://twemoji.maxcdn.com/v/latest/twemoji.min.js"
-            crossorigin="anonymous"
-        ></script>
+        <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@3.0.3/dist/index.min.js"></script>
         <script src="../../static/js/main/event.js"></script>
         <!-- <script>
           const handleCopyClipBoard = async (text) => {
@@ -4114,7 +4111,7 @@
                             const label = currencyLabels[code] || code;
 
                             return `
-                <article class="exchangeRateRow">
+                <div class="exchangeRateRow">
                     <div class="exchangeRateMain">
                         <div class="exchangeRateCurrencyLine">
                             <span class="exchangeRateCurrency">${code}</span>
@@ -4125,7 +4122,7 @@
                     <div class="exchangeRateValueWrap">
                         <span class="exchangeRateValue">${formatExchangeValue(code, value)}</span>
                     </div>
-                </article>
+                </div>
             `;
                         })
                         .join("");

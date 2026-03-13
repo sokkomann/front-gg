@@ -26,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const detailContent = document.getElementById("settingsDetailContent");
     const detailSummary = document.getElementById("settingsDetailSummary");
     const detailList = document.getElementById("settingsDetailList");
+    const detailRoutes = document.getElementById("settingsDetailRoutes");
     const modalLayer = document.getElementById("settingsModalLayer");
     const appearanceModal = document.getElementById("appearanceModal");
     const shortcutModal = document.getElementById("shortcutModal");
@@ -715,33 +716,647 @@ document.addEventListener("DOMContentLoaded", () => {
      * 우측 상세 패널에는 "섹션 기본 목록" 외에 하위 라우트 화면이 들어올 수 있다.
      * 현재는 사용자가 요청한 `계정 > 계정 정보` 비밀번호 확인 화면만 구현한다.
      */
-    function renderDetailRoute() {
+    function hideDetailRouteViews() {
+        detailRoutes?.querySelectorAll("[data-detail-route-view]").forEach((routeView) => {
+            if (!(routeView instanceof HTMLElement)) {
+                return;
+            }
+
+            routeView.hidden = true;
+            routeView.setAttribute("aria-hidden", "true");
+        });
+    }
+
+    function showDetailRouteView(routeName) {
+        const nextRouteView = detailRoutes?.querySelector(
+            `[data-detail-route-view="${routeName}"]`,
+        );
+
+        detailRoutes?.querySelectorAll("[data-detail-route-view]").forEach((routeView) => {
+            if (!(routeView instanceof HTMLElement)) {
+                return;
+            }
+
+            routeView.hidden = routeView !== nextRouteView;
+            routeView.setAttribute("aria-hidden", String(routeView !== nextRouteView));
+        });
+
+        return nextRouteView instanceof HTMLElement ? nextRouteView : null;
+    }
+
+    function bindRouteOnce(routeRoot, datasetKey, setup) {
+        if (!(routeRoot instanceof HTMLElement)) {
+            return;
+        }
+
+        if (routeRoot.dataset[datasetKey] === "true") {
+            return;
+        }
+
+        setup(routeRoot);
+        routeRoot.dataset[datasetKey] = "true";
+    }
+
+    function buildAccountInfoListMarkup() {
+        return accountInfoItems
+            .map((item) => {
+                const descriptionMarkup = item.description
+                    ? `<span class="account-info-item__description">${item.description}</span>`
+                    : "";
+                const arrowMarkup =
+                    item.showArrow === false
+                        ? ""
+                        : `<span class="account-info-item__arrow">${buildIcon(icons.arrow)}</span>`;
+
+                return `
+                    <button type="button" class="account-info-item" data-account-info-id="${item.id}">
+                        <span class="account-info-item__content">
+                            <span class="account-info-item__label">${item.label}</span>
+                            <span class="account-info-item__value">${item.value || "&nbsp;"}</span>
+                            ${descriptionMarkup}
+                        </span>
+                        ${arrowMarkup}
+                    </button>
+                `;
+            })
+            .join("");
+    }
+
+    function buildUsernameSuggestionMarkup(value) {
+        return buildUsernameSuggestions(value)
+            .map(
+                (suggestion) => `
+                    <button
+                        type="button"
+                        class="username-suggestion__item"
+                        data-username-suggestion="${suggestion}"
+                    >
+                        ${suggestion}
+                    </button>
+                `,
+            )
+            .join("");
+    }
+
+    function applyAccountInfoAuthState(routeRoot) {
+        const passwordField = routeRoot.querySelector("[data-password-field]");
+        const passwordInput = routeRoot.querySelector("[data-account-auth-input]");
+        const authSubmitButton = routeRoot.querySelector("[data-account-auth-submit]");
+
         if (
-            activeDetailRoute !== "account-info-auth" &&
-            activeDetailRoute !== "account-info-list" &&
-            activeDetailRoute !== "username-edit" &&
-            activeDetailRoute !== "password-edit" &&
-            activeDetailRoute !== "deactivate-edit" &&
-            activeDetailRoute !== "notification-filter-edit" &&
-            activeDetailRoute !== "notification-muted-edit" &&
-            activeDetailRoute !== "notification-preferences-edit" &&
-            activeDetailRoute !== "notification-push-edit" &&
-            activeDetailRoute !== "notification-email-edit" &&
-            activeDetailRoute !== "privacy-mute-block-edit" &&
-            activeDetailRoute !== "privacy-muted-notifications-edit" &&
-            activeDetailRoute !== "privacy-blocked-accounts-edit" &&
-            activeDetailRoute !== "privacy-muted-accounts-edit" &&
-            activeDetailRoute !== "privacy-muted-words-edit" &&
-            activeDetailRoute !== "privacy-muted-words-add-edit" &&
-            activeDetailRoute !== "privacy-posts-edit" &&
-            activeDetailRoute !== "privacy-posts-location-edit" &&
-            activeDetailRoute !== "privacy-chat-edit" &&
-            activeDetailRoute !== "privacy-discoverability-edit" &&
-            activeDetailRoute !== "phone-edit" &&
-            activeDetailRoute !== "email-edit" &&
-            activeDetailRoute !== "country-edit" &&
-            activeDetailRoute !== "language-edit"
+            !(passwordField instanceof HTMLElement) ||
+            !(passwordInput instanceof HTMLInputElement) ||
+            !(authSubmitButton instanceof HTMLButtonElement)
         ) {
+            return;
+        }
+
+        const isActive =
+            document.activeElement === passwordInput || passwordInput.value.length > 0;
+        const hasPasswordValue = passwordInput.value.trim().length > 0;
+        passwordField.classList.toggle("detail-form__field--active", isActive);
+        authSubmitButton.disabled = !hasPasswordValue;
+        authSubmitButton.classList.toggle(
+            "detail-form__button--enabled",
+            hasPasswordValue,
+        );
+    }
+
+    function syncAccountInfoAuthRoute(routeRoot) {
+        const passwordInput = routeRoot.querySelector("[data-account-auth-input]");
+        if (passwordInput instanceof HTMLInputElement) {
+            passwordInput.value = "";
+        }
+        applyAccountInfoAuthState(routeRoot);
+    }
+
+    function bindAccountInfoAuthRoute(routeRoot) {
+        const passwordInput = routeRoot.querySelector("[data-account-auth-input]");
+        const authForm = routeRoot.querySelector("[data-account-auth-form]");
+
+        if (passwordInput instanceof HTMLInputElement) {
+            passwordInput.addEventListener("focus", () => applyAccountInfoAuthState(routeRoot));
+            passwordInput.addEventListener("blur", () => applyAccountInfoAuthState(routeRoot));
+            passwordInput.addEventListener("input", () => applyAccountInfoAuthState(routeRoot));
+        }
+
+        if (authForm instanceof HTMLFormElement) {
+            authForm.addEventListener("submit", (event) => {
+                event.preventDefault();
+                if (!(passwordInput instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                applyAccountInfoAuthState(routeRoot);
+                if (passwordInput.value.trim().length === 0) {
+                    return;
+                }
+
+                activeDetailRoute = "account-info-list";
+                renderDetail();
+            });
+        }
+    }
+
+    function applyUsernameEditorState(routeRoot) {
+        const usernameField = routeRoot.querySelector("[data-username-field]");
+        const usernameInput = routeRoot.querySelector("[data-username-input]");
+        const usernameMessage = routeRoot.querySelector("[data-username-message]");
+        const usernameSuggestionList = routeRoot.querySelector(
+            "[data-username-suggestion-list]",
+        );
+        const usernameSaveButton = routeRoot.querySelector("[data-username-save]");
+        const usernameMarketplace = routeRoot.querySelector("[data-username-marketplace]");
+
+        if (
+            !(usernameField instanceof HTMLElement) ||
+            !(usernameInput instanceof HTMLInputElement) ||
+            !(usernameMessage instanceof HTMLElement) ||
+            !(usernameSuggestionList instanceof HTMLElement) ||
+            !(usernameSaveButton instanceof HTMLButtonElement)
+        ) {
+            return;
+        }
+
+        usernameState.draft = usernameInput.value;
+        const validationMessage = getUsernameValidationMessage(usernameState.draft);
+        const canSave =
+            !validationMessage &&
+            usernameState.draft.length > 0 &&
+            usernameState.draft !== usernameState.current;
+        const usernameLabel = usernameField.querySelector(".username-field__label");
+
+        usernameField.classList.toggle(
+            "username-field--active",
+            document.activeElement === usernameInput,
+        );
+        usernameField.classList.toggle(
+            "username-field--error",
+            Boolean(validationMessage),
+        );
+        if (usernameLabel instanceof HTMLElement) {
+            usernameLabel.classList.toggle(
+                "username-field__label--filled",
+                usernameInput.value.length > 0,
+            );
+        }
+
+        usernameMessage.hidden = !validationMessage;
+        usernameMessage.textContent = validationMessage;
+        usernameSuggestionList.innerHTML = buildUsernameSuggestionMarkup(
+            usernameState.draft,
+        );
+        usernameSaveButton.disabled = !canSave;
+        usernameSaveButton.classList.toggle(
+            "username-action__button--enabled",
+            canSave,
+        );
+        if (usernameMarketplace instanceof HTMLElement) {
+            usernameMarketplace.hidden = !usernameState.isMarketplaceVisible;
+            usernameMarketplace.setAttribute(
+                "aria-hidden",
+                String(!usernameState.isMarketplaceVisible),
+            );
+        }
+    }
+
+    function syncUsernameRoute(routeRoot) {
+        const usernameInput = routeRoot.querySelector("[data-username-input]");
+        if (usernameInput instanceof HTMLInputElement) {
+            usernameInput.value = usernameState.draft;
+        }
+        applyUsernameEditorState(routeRoot);
+    }
+
+    function bindUsernameRoute(routeRoot) {
+        const usernameForm = routeRoot.querySelector("[data-username-form]");
+        const usernameInput = routeRoot.querySelector("[data-username-input]");
+        const usernameSuggestionList = routeRoot.querySelector(
+            "[data-username-suggestion-list]",
+        );
+        const usernameMarketplaceCloseButton = routeRoot.querySelector(
+            "[data-username-marketplace-close]",
+        );
+
+        if (usernameInput instanceof HTMLInputElement) {
+            usernameInput.addEventListener("focus", () => applyUsernameEditorState(routeRoot));
+            usernameInput.addEventListener("blur", () => applyUsernameEditorState(routeRoot));
+            usernameInput.addEventListener("input", () => applyUsernameEditorState(routeRoot));
+        }
+
+        if (usernameSuggestionList instanceof HTMLElement) {
+            usernameSuggestionList.addEventListener("click", (event) => {
+                const target = event.target;
+                if (!(target instanceof Element) || !(usernameInput instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                const suggestionButton = target.closest("[data-username-suggestion]");
+                if (!(suggestionButton instanceof HTMLButtonElement)) {
+                    return;
+                }
+
+                usernameInput.value = suggestionButton.dataset.usernameSuggestion || "";
+                applyUsernameEditorState(routeRoot);
+                usernameInput.focus();
+                usernameInput.setSelectionRange(
+                    usernameInput.value.length,
+                    usernameInput.value.length,
+                );
+            });
+        }
+
+        if (usernameForm instanceof HTMLFormElement) {
+            usernameForm.addEventListener("submit", (event) => {
+                event.preventDefault();
+                if (!(usernameInput instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                applyUsernameEditorState(routeRoot);
+                if (getUsernameValidationMessage(usernameInput.value)) {
+                    return;
+                }
+
+                usernameState.current = usernameInput.value;
+                usernameState.draft = usernameInput.value;
+                accountInfoItems[0].value = usernameInput.value;
+                activeDetailRoute = "account-info-list";
+                renderDetail();
+            });
+        }
+
+        if (usernameMarketplaceCloseButton instanceof HTMLButtonElement) {
+            usernameMarketplaceCloseButton.addEventListener("click", () => {
+                usernameState.isMarketplaceVisible = false;
+                applyUsernameEditorState(routeRoot);
+            });
+        }
+    }
+
+    function applyPasswordEditorState(routeRoot) {
+        const passwordEditorFields = Array.from(
+            routeRoot.querySelectorAll("[data-password-editor-field]"),
+        );
+        const passwordEditorInputs = Array.from(
+            routeRoot.querySelectorAll("[data-password-editor-input]"),
+        );
+        const passwordEditorSaveButton = routeRoot.querySelector(
+            "[data-password-editor-save]",
+        );
+
+        passwordEditorInputs.forEach((input) => {
+            if (!(input instanceof HTMLInputElement)) {
+                return;
+            }
+
+            const stateKey = input.dataset.passwordEditorInput;
+            if (!stateKey) {
+                return;
+            }
+
+            passwordChangeState[stateKey] = input.value;
+        });
+
+        passwordEditorFields.forEach((field) => {
+            if (!(field instanceof HTMLElement)) {
+                return;
+            }
+
+            const input = field.querySelector("[data-password-editor-input]");
+            if (!(input instanceof HTMLInputElement)) {
+                return;
+            }
+
+            field.classList.toggle(
+                "password-editor__field--active",
+                document.activeElement === input,
+            );
+        });
+
+        if (!(passwordEditorSaveButton instanceof HTMLButtonElement)) {
+            return;
+        }
+
+        const canSave =
+            passwordChangeState.currentPassword.length > 0 &&
+            passwordChangeState.nextPassword.length > 0 &&
+            passwordChangeState.confirmPassword.length > 0 &&
+            passwordChangeState.nextPassword === passwordChangeState.confirmPassword;
+
+        passwordEditorSaveButton.disabled = !canSave;
+        passwordEditorSaveButton.classList.toggle(
+            "password-editor__save--enabled",
+            canSave,
+        );
+    }
+
+    function syncPasswordEditorRoute(routeRoot) {
+        routeRoot.querySelectorAll("[data-password-editor-input]").forEach((input) => {
+            if (!(input instanceof HTMLInputElement)) {
+                return;
+            }
+
+            const stateKey = input.dataset.passwordEditorInput;
+            if (stateKey) {
+                input.value = passwordChangeState[stateKey];
+            }
+        });
+
+        applyPasswordEditorState(routeRoot);
+    }
+
+    function bindPasswordEditorRoute(routeRoot) {
+        const passwordEditorForm = routeRoot.querySelector("[data-password-editor-form]");
+        routeRoot.querySelectorAll("[data-password-editor-input]").forEach((input) => {
+            if (!(input instanceof HTMLInputElement)) {
+                return;
+            }
+
+            input.addEventListener("focus", () => applyPasswordEditorState(routeRoot));
+            input.addEventListener("blur", () => applyPasswordEditorState(routeRoot));
+            input.addEventListener("input", () => applyPasswordEditorState(routeRoot));
+        });
+
+        if (passwordEditorForm instanceof HTMLFormElement) {
+            passwordEditorForm.addEventListener("submit", (event) => {
+                event.preventDefault();
+                applyPasswordEditorState(routeRoot);
+            });
+        }
+    }
+
+    function syncDeactivateRoute(routeRoot) {
+        const avatar = routeRoot.querySelector("[data-deactivate-avatar]");
+        const name = routeRoot.querySelector("[data-deactivate-name]");
+        const handle = routeRoot.querySelector("[data-deactivate-handle]");
+        const summary = routeRoot.querySelector("[data-deactivate-summary]");
+
+        if (avatar instanceof HTMLElement) {
+            avatar.style.backgroundImage = `url("${currentAccountState.avatarUrl}")`;
+        }
+        if (name instanceof HTMLElement) {
+            name.textContent = currentAccountState.displayName;
+        }
+        if (handle instanceof HTMLElement) {
+            handle.textContent = currentAccountState.handle;
+        }
+        if (summary instanceof HTMLElement) {
+            summary.textContent = `X 계정 비활성화 과정을 시작합니다. 내 표시 이름, ${currentAccountState.handle}, 공개 프로필이 X.com, iOS용 X, Android용 X에 더 이상 표시되지 않습니다.`;
+        }
+    }
+
+    function syncNotificationFilterRoute(routeRoot) {
+        const toggle = routeRoot.querySelector("[data-notification-filter-toggle]");
+        if (toggle instanceof HTMLInputElement) {
+            toggle.checked = notificationFilterState.isQualityFilterEnabled;
+        }
+    }
+
+    function syncNotificationMutedRoute(routeRoot) {
+        routeRoot.querySelectorAll("[data-notification-muted-toggle]").forEach((input) => {
+            if (!(input instanceof HTMLInputElement)) {
+                return;
+            }
+
+            const optionKey = input.dataset.notificationMutedToggle;
+            input.checked = optionKey
+                ? Boolean(notificationFilterState.mutedNotificationOptions[optionKey])
+                : false;
+        });
+    }
+
+    function syncNotificationEmailRoute(routeRoot) {
+        routeRoot.querySelectorAll("[data-notification-email-toggle]").forEach((input) => {
+            if (!(input instanceof HTMLInputElement)) {
+                return;
+            }
+
+            const toggleKey = input.dataset.notificationEmailToggle;
+            input.checked =
+                toggleKey === "enabled"
+                    ? notificationPreferenceState.isEmailEnabled
+                    : Boolean(notificationPreferenceState.emailAlerts[toggleKey]);
+        });
+
+        routeRoot.querySelectorAll("[data-notification-email-digest]").forEach((input) => {
+            if (input instanceof HTMLInputElement) {
+                input.checked = input.value === notificationPreferenceState.emailDigest;
+            }
+        });
+    }
+
+    function syncNotificationPushRoute(routeRoot) {
+        const toggle = routeRoot.querySelector("[data-notification-push-toggle]");
+        if (toggle instanceof HTMLInputElement) {
+            toggle.checked = notificationPreferenceState.isPushEnabled;
+        }
+    }
+
+    function syncPrivacyChatRoute(routeRoot) {
+        routeRoot.querySelectorAll("[data-privacy-chat-allow]").forEach((input) => {
+            if (input instanceof HTMLInputElement) {
+                input.checked = input.value === privacyChatState.allow;
+            }
+        });
+        routeRoot.querySelectorAll("[data-privacy-chat-toggle]").forEach((input) => {
+            if (!(input instanceof HTMLInputElement)) {
+                return;
+            }
+
+            input.checked =
+                input.dataset.privacyChatToggle === "filter-low-quality"
+                    ? privacyChatState.isLowQualityFilterEnabled
+                    : privacyChatState.areReadReceiptsEnabled;
+        });
+    }
+
+    function syncPrivacyDiscoverabilityRoute(routeRoot) {
+        routeRoot
+            .querySelectorAll("[data-privacy-discoverability-toggle]")
+            .forEach((input) => {
+                if (!(input instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                input.checked =
+                    input.dataset.privacyDiscoverabilityToggle === "email"
+                        ? privacyDiscoverabilityState.isEmailDiscoverable
+                        : privacyDiscoverabilityState.isPhoneDiscoverable;
+            });
+    }
+
+    function applyMutedWordFormState(routeRoot) {
+        const mutedWordField = routeRoot.querySelector("[data-privacy-muted-word-field]");
+        const mutedWordInput = routeRoot.querySelector("[data-privacy-muted-word-input]");
+        const mutedWordSave = routeRoot.querySelector("[data-privacy-muted-word-save]");
+
+        if (
+            !(mutedWordField instanceof HTMLElement) ||
+            !(mutedWordInput instanceof HTMLInputElement) ||
+            !(mutedWordSave instanceof HTMLButtonElement)
+        ) {
+            return;
+        }
+
+        const hasValue = mutedWordInput.value.trim().length > 0;
+        mutedWordField.classList.toggle(
+            "privacy-muted-word-form__field-shell--active",
+            document.activeElement === mutedWordInput || hasValue,
+        );
+        mutedWordSave.disabled = !hasValue;
+        mutedWordSave.classList.toggle("privacy-muted-word-form__save--enabled", hasValue);
+    }
+
+    function syncMutedWordFormRoute(routeRoot) {
+        const mutedWordInput = routeRoot.querySelector("[data-privacy-muted-word-input]");
+        if (mutedWordInput instanceof HTMLInputElement) {
+            mutedWordInput.value = mutedWordFormState.value;
+        }
+
+        const timelineToggle = routeRoot.querySelector(
+            "[data-privacy-muted-word-timeline-toggle]",
+        );
+        if (timelineToggle instanceof HTMLInputElement) {
+            timelineToggle.checked = mutedWordFormState.muteFromTimeline;
+        }
+        const notificationsToggle = routeRoot.querySelector(
+            "[data-privacy-muted-word-notifications-toggle]",
+        );
+        if (notificationsToggle instanceof HTMLInputElement) {
+            notificationsToggle.checked = mutedWordFormState.muteNotifications;
+        }
+
+        routeRoot.querySelectorAll("[data-privacy-muted-word-audience]").forEach((input) => {
+            if (input instanceof HTMLInputElement) {
+                input.checked =
+                    input.value === mutedWordFormState.notificationAudience;
+            }
+        });
+
+        routeRoot.querySelectorAll("[data-privacy-muted-word-duration]").forEach((input) => {
+            if (input instanceof HTMLInputElement) {
+                input.checked = input.value === mutedWordFormState.duration;
+            }
+        });
+
+        applyMutedWordFormState(routeRoot);
+    }
+
+    function bindMutedWordFormRoute(routeRoot) {
+        const mutedWordForm = routeRoot.querySelector("[data-privacy-muted-word-form]");
+        const mutedWordInput = routeRoot.querySelector("[data-privacy-muted-word-input]");
+
+        if (mutedWordInput instanceof HTMLInputElement) {
+            mutedWordInput.addEventListener("focus", () => applyMutedWordFormState(routeRoot));
+            mutedWordInput.addEventListener("blur", () => applyMutedWordFormState(routeRoot));
+            mutedWordInput.addEventListener("input", () => {
+                mutedWordFormState.value = mutedWordInput.value;
+                applyMutedWordFormState(routeRoot);
+            });
+        }
+
+        if (mutedWordForm instanceof HTMLFormElement) {
+            mutedWordForm.addEventListener("submit", (event) => {
+                event.preventDefault();
+                applyMutedWordFormState(routeRoot);
+            });
+        }
+    }
+
+    function syncPrivacyPostsRoute(routeRoot) {
+        const toggle = routeRoot.querySelector("[data-privacy-posts-sensitive-toggle]");
+        if (toggle instanceof HTMLInputElement) {
+            toggle.checked = privacyPostsState.isSensitiveMediaMarked;
+        }
+    }
+
+    function syncPrivacyPostsLocationRoute(routeRoot) {
+        const toggle = routeRoot.querySelector("[data-privacy-posts-location-toggle]");
+        if (toggle instanceof HTMLInputElement) {
+            toggle.checked = privacyPostsState.isLocationEnabled;
+        }
+    }
+
+    function syncPhoneRoute(routeRoot) {
+        const phoneItem = accountInfoItems.find((item) => item.id === "phone");
+        const phoneValue = phoneItem?.value || "+821099139076";
+        const phoneValueNode = routeRoot.querySelector("[data-phone-current-value]");
+        const verifiedScreen = routeRoot.querySelector("[data-phone-verified-screen]");
+
+        if (phoneValueNode instanceof HTMLElement) {
+            phoneValueNode.textContent = phoneValue;
+        }
+        if (verifiedScreen instanceof HTMLElement) {
+            verifiedScreen.hidden = true;
+            verifiedScreen.setAttribute("aria-hidden", "true");
+        }
+    }
+
+    function syncEmailRoute(routeRoot) {
+        const emailItem = accountInfoItems.find((item) => item.id === "email");
+        const emailValue = emailItem?.value || "tjdgh1851@gmail.com";
+        const emailValueNode = routeRoot.querySelector("[data-email-current-value]");
+        if (emailValueNode instanceof HTMLElement) {
+            emailValueNode.textContent = emailValue;
+        }
+    }
+
+    function syncCountryRoute(routeRoot) {
+        const countryItem = accountInfoItems.find((item) => item.id === "country");
+        const currentCountry = countryItem?.value || "대한민국";
+        const countrySelect = routeRoot.querySelector("[data-country-select]");
+
+        if (!(countrySelect instanceof HTMLSelectElement)) {
+            return;
+        }
+
+        if (countrySelect.options.length === 0) {
+            countrySelect.innerHTML = countryOptionMarkup;
+        }
+
+        const matchedOption = Array.from(countrySelect.options).find(
+            (option) => option.textContent?.trim() === currentCountry,
+        );
+        if (matchedOption) {
+            countrySelect.value = matchedOption.value;
+        }
+    }
+
+    function bindCountryRoute(routeRoot) {
+        const countryItem = accountInfoItems.find((item) => item.id === "country");
+        const countrySelect = routeRoot.querySelector("[data-country-select]");
+        if (!(countrySelect instanceof HTMLSelectElement)) {
+            return;
+        }
+
+        countrySelect.addEventListener("change", () => {
+            const selectedCountry =
+                countrySelect.selectedOptions[0]?.textContent?.trim() || "대한민국";
+
+            if (countryItem) {
+                countryItem.value = selectedCountry;
+            }
+        });
+    }
+
+    function syncLanguageRoute(routeRoot) {
+        const languageValue = routeRoot.querySelector("[data-language-current-value]");
+        if (languageValue instanceof HTMLElement) {
+            languageValue.textContent = getCombinedLanguageLabel();
+        }
+    }
+
+    function syncAccountInfoListRoute(routeRoot) {
+        const accountInfoList = routeRoot.querySelector("[data-account-info-list]");
+        if (accountInfoList instanceof HTMLElement) {
+            accountInfoList.innerHTML = buildAccountInfoListMarkup();
+        }
+    }
+
+    function renderDetailRoute() {
+        const routeRoot = showDetailRouteView(activeDetailRoute);
+        if (!(routeRoot instanceof HTMLElement)) {
             return false;
         }
 
@@ -751,1552 +1366,92 @@ document.addEventListener("DOMContentLoaded", () => {
         detailList.hidden = true;
 
         if (activeDetailRoute === "account-info-auth") {
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route" data-detail-route>
-                        <div class="detail-route__section">
-                            <h3 class="detail-route__heading">비밀번호를 확인하세요</h3>
-                            <p class="detail-route__copy">비밀번호를 입력하여 계속하세요.</p>
-                        </div>
-                        <form class="detail-form" data-account-auth-form>
-                            <label class="detail-form__field" data-password-field>
-                                <span class="detail-form__label">비밀번호</span>
-                                <input
-                                    class="detail-form__input"
-                                    type="password"
-                                    aria-label="비밀번호"
-                                />
-                            </label>
-                            <a class="detail-form__link" href="#">비밀번호를 잊으셨나요?</a>
-                            <div class="detail-form__footer">
-                                <button
-                                    type="submit"
-                                    class="detail-form__button"
-                                    data-account-auth-submit
-                                    disabled
-                                >
-                                    확인
-                                </button>
-                            </div>
-                        </form>
-                    </section>
-                `,
-            );
+            bindRouteOnce(routeRoot, "boundAccountAuth", bindAccountInfoAuthRoute);
+            syncAccountInfoAuthRoute(routeRoot);
+            return true;
+        }
 
-            const passwordField = detailContent.querySelector(
-                "[data-password-field]",
-            );
-            const passwordInput = passwordField?.querySelector(
-                ".detail-form__input",
-            );
-            const authForm = detailContent.querySelector(
-                "[data-account-auth-form]",
-            );
-            const authSubmitButton = detailContent.querySelector(
-                "[data-account-auth-submit]",
-            );
-
-            if (
-                passwordField instanceof HTMLElement &&
-                passwordInput instanceof HTMLInputElement &&
-                authSubmitButton instanceof HTMLButtonElement
-            ) {
-                // Spring 정적 리소스 배포에서도 추가 템플릿 엔진 의존 없이 DOM 상태만으로
-                // 포커스/입력 여부를 판단해 클래스만 토글하도록 구성한다.
-                const syncPasswordFieldState = () => {
-                    const isActive =
-                        document.activeElement === passwordInput ||
-                        passwordInput.value.length > 0;
-                    const hasPasswordValue =
-                        passwordInput.value.trim().length > 0;
-                    passwordField.classList.toggle(
-                        "detail-form__field--active",
-                        isActive,
-                    );
-                    authSubmitButton.disabled = !hasPasswordValue;
-                    authSubmitButton.classList.toggle(
-                        "detail-form__button--enabled",
-                        hasPasswordValue,
-                    );
-                };
-
-                passwordInput.addEventListener("focus", syncPasswordFieldState);
-                passwordInput.addEventListener("blur", syncPasswordFieldState);
-                passwordInput.addEventListener("input", syncPasswordFieldState);
-                syncPasswordFieldState();
-            }
-
-            if (authForm instanceof HTMLFormElement) {
-                authForm.addEventListener("submit", (event) => {
-                    event.preventDefault();
-
-                    if (
-                        !(passwordInput instanceof HTMLInputElement) ||
-                        passwordInput.value.trim().length === 0
-                    ) {
-                        return;
-                    }
-
-                    /*
-                     * 현재 단계:
-                     * - 서버 인증이 아직 없어서 입력값과 관계없이 다음 상세 화면으로 넘긴다.
-                     *
-                     * Spring 연동 시 권장 흐름:
-                     * 1. 여기서 `passwordInput.value`를 읽는다.
-                     * 2. `/settings/account/verify-password` 같은 POST 엔드포인트로 전송한다.
-                     * 3. Spring Security 또는 서비스 레이어에서 현재 로그인 사용자의 비밀번호를 검증한다.
-                     * 4. 성공 시에만 `activeDetailRoute = "account-info-list"`로 전환한다.
-                     * 5. 실패 시에는 400/401 응답을 받아 필드 하단 에러 문구를 표시한다.
-                     *
-                     * 즉, 지금의 즉시 전환 코드는 서버가 붙기 전까지의 임시 클라이언트 스텁이다.
-                     */
-                    activeDetailRoute = "account-info-list";
-                    renderDetail();
-                });
-            }
-
+        if (activeDetailRoute === "account-info-list") {
+            syncAccountInfoListRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "username-edit") {
-            const usernameError = getUsernameValidationMessage(
-                usernameState.draft,
-            );
-            const canSaveUsername =
-                !usernameError &&
-                usernameState.draft.length > 0 &&
-                usernameState.draft !== usernameState.current;
-
             detailTitle.textContent = "사용자 이름 변경";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--username" data-detail-route>
-                        <form class="username-editor" data-username-form novalidate>
-                            <div class="username-editor__section">
-                                <label class="username-field${usernameError ? " username-field--error" : ""}" data-username-field>
-                                    <span class="username-field__label${usernameState.draft.length > 0 ? " username-field__label--filled" : ""}">사용자 아이디</span>
-                                    <input
-                                        class="username-field__input"
-                                        type="text"
-                                        value="${usernameState.draft}"
-                                        aria-label="사용자 아이디"
-                                        autocomplete="off"
-                                        autocapitalize="off"
-                                        spellcheck="false"
-                                        data-username-input
-                                    />
-                                </label>
-                                <p class="username-field__message" data-username-message${usernameError ? "" : " hidden"}>
-                                    ${usernameError}
-                                </p>
-                            </div>
-
-                            <section class="username-suggestion">
-                                <h3 class="username-suggestion__title">추천</h3>
-                                <div class="username-suggestion__list" data-username-suggestion-list>
-                                    ${buildUsernameSuggestions(
-                                        usernameState.draft,
-                                    )
-                                        .map(
-                                            (suggestion) => `
-                                                <button
-                                                    type="button"
-                                                    class="username-suggestion__item"
-                                                    data-username-suggestion="${suggestion}"
-                                                >
-                                                    ${suggestion}
-                                                </button>
-                                            `,
-                                        )
-                                        .join("")}
-                                </div>
-                            </section>
-
-                            <div class="username-action">
-                                <button
-                                    type="submit"
-                                    class="username-action__button${canSaveUsername ? " username-action__button--enabled" : ""}"
-                                    data-username-save
-                                    ${canSaveUsername ? "" : "disabled"}
-                                >
-                                    저장
-                                </button>
-                            </div>
-                        </form>
-
-                        ${
-                            usernameState.isMarketplaceVisible
-                                ? `
-                                    <aside class="username-marketplace">
-                                        <button
-                                            type="button"
-                                            class="username-marketplace__close"
-                                            aria-label="추천 카드 닫기"
-                                            data-username-marketplace-close
-                                        >
-                                            ${buildIcon(
-                                                "M10.59 12L4.54 5.96l1.42-1.42L12 10.59l6.04-6.05 1.42 1.42L13.41 12l6.05 6.04-1.42 1.42L12 13.41l-6.04 6.05-1.42-1.42L10.59 12z",
-                                            )}
-                                        </button>
-                                        <div class="username-marketplace__brand">X</div>
-                                        <p class="username-marketplace__copy">
-                                            Handle Marketplace에 원하는 사용자 아이디가 있을 수도 있습니다
-                                        </p>
-                                        <button type="button" class="username-marketplace__button">
-                                            사용자 아이디 찾아보기
-                                        </button>
-                                    </aside>
-                                `
-                                : ""
-                        }
-                    </section>
-                `,
-            );
-
-            const usernameForm = detailContent.querySelector(
-                "[data-username-form]",
-            );
-            const usernameField = detailContent.querySelector(
-                "[data-username-field]",
-            );
-            const usernameInput = detailContent.querySelector(
-                "[data-username-input]",
-            );
-            const usernameMessage = detailContent.querySelector(
-                "[data-username-message]",
-            );
-            const usernameSuggestionList = detailContent.querySelector(
-                "[data-username-suggestion-list]",
-            );
-            const usernameSaveButton = detailContent.querySelector(
-                "[data-username-save]",
-            );
-            const usernameMarketplaceCloseButton = detailContent.querySelector(
-                "[data-username-marketplace-close]",
-            );
-
-            if (
-                usernameForm instanceof HTMLFormElement &&
-                usernameField instanceof HTMLElement &&
-                usernameInput instanceof HTMLInputElement &&
-                usernameMessage instanceof HTMLElement &&
-                usernameSuggestionList instanceof HTMLElement &&
-                usernameSaveButton instanceof HTMLButtonElement
-            ) {
-                const usernameLabel = usernameField.querySelector(
-                    ".username-field__label",
-                );
-
-                const syncUsernameEditorState = () => {
-                    usernameState.draft = usernameInput.value;
-
-                    const isActive = document.activeElement === usernameInput;
-                    const validationMessage = getUsernameValidationMessage(
-                        usernameState.draft,
-                    );
-                    const canSave =
-                        !validationMessage &&
-                        usernameState.draft.length > 0 &&
-                        usernameState.draft !== usernameState.current;
-
-                    usernameField.classList.toggle(
-                        "username-field--active",
-                        isActive,
-                    );
-                    usernameField.classList.toggle(
-                        "username-field--error",
-                        Boolean(validationMessage),
-                    );
-                    if (usernameLabel instanceof HTMLElement) {
-                        usernameLabel.classList.toggle(
-                            "username-field__label--filled",
-                            usernameInput.value.length > 0,
-                        );
-                    }
-                    usernameMessage.hidden = !validationMessage;
-                    usernameMessage.textContent = validationMessage;
-                    usernameSaveButton.disabled = !canSave;
-                    usernameSaveButton.classList.toggle(
-                        "username-action__button--enabled",
-                        canSave,
-                    );
-                    usernameSuggestionList.innerHTML = buildUsernameSuggestions(
-                        usernameState.draft,
-                    )
-                        .map(
-                            (suggestion) => `
-                                <button
-                                    type="button"
-                                    class="username-suggestion__item"
-                                    data-username-suggestion="${suggestion}"
-                                >
-                                    ${suggestion}
-                                </button>
-                            `,
-                        )
-                        .join("");
-                };
-
-                usernameInput.addEventListener(
-                    "focus",
-                    syncUsernameEditorState,
-                );
-                usernameInput.addEventListener("blur", syncUsernameEditorState);
-                usernameInput.addEventListener(
-                    "input",
-                    syncUsernameEditorState,
-                );
-
-                usernameSuggestionList.addEventListener("click", (event) => {
-                    const target = event.target;
-                    if (!(target instanceof Element)) {
-                        return;
-                    }
-
-                    const suggestionButton = target.closest(
-                        "[data-username-suggestion]",
-                    );
-                    if (!(suggestionButton instanceof HTMLButtonElement)) {
-                        return;
-                    }
-
-                    usernameInput.value =
-                        suggestionButton.dataset.usernameSuggestion || "";
-                    syncUsernameEditorState();
-                    usernameInput.focus();
-                    usernameInput.setSelectionRange(
-                        usernameInput.value.length,
-                        usernameInput.value.length,
-                    );
-                });
-
-                usernameForm.addEventListener("submit", (event) => {
-                    event.preventDefault();
-                    syncUsernameEditorState();
-
-                    if (
-                        usernameSaveButton.disabled ||
-                        getUsernameValidationMessage(usernameInput.value)
-                    ) {
-                        return;
-                    }
-
-                    usernameState.current = usernameInput.value;
-                    usernameState.draft = usernameInput.value;
-                    accountInfoItems[0].value = usernameInput.value;
-                    activeDetailRoute = "account-info-list";
-                    renderDetail();
-                });
-
-                syncUsernameEditorState();
-            }
-
-            if (usernameMarketplaceCloseButton instanceof HTMLButtonElement) {
-                usernameMarketplaceCloseButton.addEventListener("click", () => {
-                    usernameState.isMarketplaceVisible = false;
-                    renderDetail();
-                });
-            }
-
+            bindRouteOnce(routeRoot, "boundUsername", bindUsernameRoute);
+            syncUsernameRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "password-edit") {
             detailTitle.textContent = "비밀번호 변경";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--password" data-detail-route>
-                        <form class="password-editor" data-password-editor-form novalidate>
-                            <div class="password-editor__group">
-                                <label class="password-editor__field" data-password-editor-field>
-                                    <span class="password-editor__label">현재 비밀번호</span>
-                                    <input
-                                        class="password-editor__input"
-                                        type="password"
-                                        value="${passwordChangeState.currentPassword}"
-                                        aria-label="현재 비밀번호"
-                                        data-password-editor-input="currentPassword"
-                                    />
-                                </label>
-                                <a href="#" class="password-editor__link">
-                                    비밀번호를 잊으셨나요?
-                                </a>
-                            </div>
-
-                            <div class="password-editor__group">
-                                <label class="password-editor__field" data-password-editor-field>
-                                    <span class="password-editor__label">새 비밀번호</span>
-                                    <input
-                                        class="password-editor__input"
-                                        type="password"
-                                        value="${passwordChangeState.nextPassword}"
-                                        aria-label="새 비밀번호"
-                                        data-password-editor-input="nextPassword"
-                                    />
-                                </label>
-                            </div>
-
-                            <div class="password-editor__group">
-                                <label class="password-editor__field" data-password-editor-field>
-                                    <span class="password-editor__label">비밀번호 확인</span>
-                                    <input
-                                        class="password-editor__input"
-                                        type="password"
-                                        value="${passwordChangeState.confirmPassword}"
-                                        aria-label="비밀번호 확인"
-                                        data-password-editor-input="confirmPassword"
-                                    />
-                                </label>
-                            </div>
-
-                            <div class="password-editor__notice">
-                                비밀번호를 변경하면 현재 사용 중인 세션을 제외한 모든 활성 X 세션에서 로그아웃됩니다. 내 계정에 대한 액세스 권한이 있는 1개의 애플리케이션은(는) 영향을 받지 않습니다.
-                                <a href="#" class="password-editor__notice-link">자세히 알아보기</a>
-                            </div>
-
-                            <div class="password-editor__actions">
-                                <button
-                                    type="submit"
-                                    class="password-editor__save"
-                                    data-password-editor-save
-                                    disabled
-                                >
-                                    저장
-                                </button>
-                            </div>
-                        </form>
-                    </section>
-                `,
-            );
-
-            const passwordEditorForm = detailContent.querySelector(
-                "[data-password-editor-form]",
-            );
-            const passwordEditorFields = Array.from(
-                detailContent.querySelectorAll("[data-password-editor-field]"),
-            );
-            const passwordEditorInputs = Array.from(
-                detailContent.querySelectorAll("[data-password-editor-input]"),
-            );
-            const passwordEditorSaveButton = detailContent.querySelector(
-                "[data-password-editor-save]",
-            );
-
-            if (
-                passwordEditorForm instanceof HTMLFormElement &&
-                passwordEditorSaveButton instanceof HTMLButtonElement
-            ) {
-                const syncPasswordEditorState = () => {
-                    passwordEditorInputs.forEach((input) => {
-                        if (!(input instanceof HTMLInputElement)) {
-                            return;
-                        }
-
-                        const stateKey = input.dataset.passwordEditorInput;
-                        if (!stateKey) {
-                            return;
-                        }
-
-                        passwordChangeState[stateKey] = input.value;
-                    });
-
-                    passwordEditorFields.forEach((field) => {
-                        if (!(field instanceof HTMLElement)) {
-                            return;
-                        }
-
-                        const input = field.querySelector(
-                            "[data-password-editor-input]",
-                        );
-                        if (!(input instanceof HTMLInputElement)) {
-                            return;
-                        }
-
-                        const isActive = document.activeElement === input;
-                        field.classList.toggle(
-                            "password-editor__field--active",
-                            isActive,
-                        );
-                    });
-
-                    const canSave =
-                        passwordChangeState.currentPassword.length > 0 &&
-                        passwordChangeState.nextPassword.length > 0 &&
-                        passwordChangeState.confirmPassword.length > 0 &&
-                        passwordChangeState.nextPassword ===
-                            passwordChangeState.confirmPassword;
-
-                    passwordEditorSaveButton.disabled = !canSave;
-                    passwordEditorSaveButton.classList.toggle(
-                        "password-editor__save--enabled",
-                        canSave,
-                    );
-                };
-
-                passwordEditorInputs.forEach((input) => {
-                    if (!(input instanceof HTMLInputElement)) {
-                        return;
-                    }
-
-                    input.addEventListener("focus", syncPasswordEditorState);
-                    input.addEventListener("blur", syncPasswordEditorState);
-                    input.addEventListener("input", syncPasswordEditorState);
-                });
-
-                passwordEditorForm.addEventListener("submit", (event) => {
-                    event.preventDefault();
-                    syncPasswordEditorState();
-                });
-
-                syncPasswordEditorState();
-            }
-
+            bindRouteOnce(routeRoot, "boundPasswordEditor", bindPasswordEditorRoute);
+            syncPasswordEditorRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "deactivate-edit") {
             detailTitle.textContent = "계정 비활성화";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--deactivate" data-detail-route>
-                        <section class="deactivate-editor">
-                            <div class="deactivate-account">
-                                <span
-                                    class="deactivate-account__avatar"
-                                    aria-hidden="true"
-                                    style="background-image: url('${currentAccountState.avatarUrl}');"
-                                ></span>
-                                <span class="deactivate-account__meta">
-                                    <strong class="deactivate-account__name">
-                                        ${currentAccountState.displayName}
-                                    </strong>
-                                    <span class="deactivate-account__handle">
-                                        ${currentAccountState.handle}
-                                    </span>
-                                </span>
-                            </div>
-
-                            <h3 class="deactivate-editor__title">
-                                계정이 비활성화됩니다
-                            </h3>
-                            <p class="deactivate-editor__summary">
-                                X 계정 비활성화 과정을 시작합니다. 내 표시 이름, ${currentAccountState.handle}, 공개 프로필이 X.com, iOS용 X, Android용 X에 더 이상 표시되지 않습니다.
-                            </p>
-
-                            <h4 class="deactivate-editor__heading">
-                                그 밖에 내가 알아야 할 내용
-                            </h4>
-                            <p class="deactivate-editor__copy">
-                                실수로 또는 잘못하여 X 계정을 비활성화한 후에도 30일 이내에 복구할 수 있습니다.
-                            </p>
-
-                            <div class="deactivate-editor__note-list">
-                                <div class="deactivate-editor__note">
-                                    일부 계정 정보는 Google 또는 Bing과 같은 검색 엔진에서 아직 접근 가능할 수도 있습니다.
-                                    <a href="#" class="deactivate-editor__link" data-deactivate-link>자세히 알아보기</a>
-                                </div>
-                                <div class="deactivate-editor__note">
-                                    @사용자 아이디를 변경하기 위해 계정을 비활성화할 필요는 없습니다.
-                                    <a href="#" class="deactivate-editor__link" data-deactivate-link>설정</a>에서 아이디를 수정하세요.
-                                </div>
-                                <div class="deactivate-editor__note">
-                                    현재 @사용자 아이디 또는 이메일 주소를 다른 X 계정에서 사용하려면 이 계정을 비활성화하기 전에 해당 항목을
-                                    <a href="#" class="deactivate-editor__link" data-deactivate-link>변경</a>하시기 바랍니다.
-                                </div>
-                                <div class="deactivate-editor__note">
-                                    <a href="#" class="deactivate-editor__link" data-deactivate-link>내 X 데이터</a>를 다운로드하려면 계정을 비활성화하기 전에 요청 및 다운로드 프로세스를 모두 완료해야 합니다. 비활성화된 계정으로는 데이터 다운로드 링크를 보낼 수 없습니다.
-                                </div>
-                            </div>
-
-                            <div class="deactivate-editor__actions">
-                                <button
-                                    type="button"
-                                    class="deactivate-editor__button"
-                                >
-                                    비활성화
-                                </button>
-                            </div>
-                        </section>
-                    </section>
-                `,
-            );
-
+            syncDeactivateRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "notification-filter-edit") {
             detailTitle.textContent = "필터";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--notification-filter" data-detail-route>
-                        <section class="notification-filter-editor">
-                            <p class="notification-filter-editor__summary">
-                                확인하고자 하는 알림과 확인하고 싶지 않은 알림을 선택하세요.
-                            </p>
-
-                            <label class="notification-filter-editor__quality">
-                                <span class="notification-filter-editor__quality-copy">
-                                    <span class="notification-filter-editor__quality-title">
-                                        퀄리티 필터
-                                    </span>
-                                    <span class="notification-filter-editor__quality-description">
-                                        선택한 중복 및 자동 게시물과 같은 콘텐츠가 필터링됩니다. 팔로우 중이거나 최근 대화한 계정의 알림에 적용되지 않습니다.
-                                        <a href="#" class="notification-filter-editor__link" data-notification-filter-link>자세히 알아보기</a>
-                                    </span>
-                                </span>
-                                <span class="notification-filter-editor__quality-control">
-                                    <input
-                                        type="checkbox"
-                                        class="notification-filter-editor__checkbox"
-                                        data-notification-filter-toggle
-                                        ${notificationFilterState.isQualityFilterEnabled ? "checked" : ""}
-                                    />
-                                    <span class="notification-filter-editor__checkbox-box" aria-hidden="true">
-                                        ${buildIcon(
-                                            "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                        )}
-                                    </span>
-                                </span>
-                            </label>
-
-                            <button
-                                type="button"
-                                class="notification-filter-editor__item"
-                                data-notification-filter-route="muted"
-                            >
-                                <span class="notification-filter-editor__item-title">
-                                    뮤트 상태의 알림
-                                </span>
-                                <span class="notification-filter-editor__item-arrow" aria-hidden="true">
-                                    ${buildIcon(icons.arrow)}
-                                </span>
-                            </button>
-                        </section>
-                    </section>
-                `,
-            );
-
+            syncNotificationFilterRoute(routeRoot);
             return true;
         }
 
-        if (activeDetailRoute === "notification-muted-edit") {
+        if (
+            activeDetailRoute === "notification-muted-edit" ||
+            activeDetailRoute === "privacy-muted-notifications-edit"
+        ) {
             detailTitle.textContent = "뮤트 상태의 알림";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--notification-muted" data-detail-route>
-                        <section class="notification-muted-editor">
-                            <h3 class="notification-muted-editor__title">
-                                다음 계정의 알림 뮤트하기:
-                            </h3>
-
-                            <div class="notification-muted-editor__list">
-                                <label class="notification-muted-editor__item">
-                                    <span class="notification-muted-editor__label">
-                                        내가 팔로우하지 않는 계정
-                                    </span>
-                                    <span class="notification-muted-editor__control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-muted-editor__checkbox"
-                                            data-notification-muted-toggle="nonFollowing"
-                                            ${notificationFilterState.mutedNotificationOptions.nonFollowing ? "checked" : ""}
-                                        />
-                                        <span class="notification-muted-editor__box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-muted-editor__item">
-                                    <span class="notification-muted-editor__label">
-                                        나를 팔로우하지 않는 계정
-                                    </span>
-                                    <span class="notification-muted-editor__control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-muted-editor__checkbox"
-                                            data-notification-muted-toggle="notFollowingYou"
-                                            ${notificationFilterState.mutedNotificationOptions.notFollowingYou ? "checked" : ""}
-                                        />
-                                        <span class="notification-muted-editor__box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-muted-editor__item">
-                                    <span class="notification-muted-editor__label">
-                                        새 계정
-                                    </span>
-                                    <span class="notification-muted-editor__control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-muted-editor__checkbox"
-                                            data-notification-muted-toggle="newAccount"
-                                            ${notificationFilterState.mutedNotificationOptions.newAccount ? "checked" : ""}
-                                        />
-                                        <span class="notification-muted-editor__box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-muted-editor__item">
-                                    <span class="notification-muted-editor__label">
-                                        기본 프로필 이미지를 사용하는 계정
-                                    </span>
-                                    <span class="notification-muted-editor__control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-muted-editor__checkbox"
-                                            data-notification-muted-toggle="defaultProfile"
-                                            ${notificationFilterState.mutedNotificationOptions.defaultProfile ? "checked" : ""}
-                                        />
-                                        <span class="notification-muted-editor__box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-muted-editor__item">
-                                    <span class="notification-muted-editor__label">
-                                        이메일을 인증하지 않은 계정
-                                    </span>
-                                    <span class="notification-muted-editor__control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-muted-editor__checkbox"
-                                            data-notification-muted-toggle="unverifiedEmail"
-                                            ${notificationFilterState.mutedNotificationOptions.unverifiedEmail ? "checked" : ""}
-                                        />
-                                        <span class="notification-muted-editor__box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-muted-editor__item">
-                                    <span class="notification-muted-editor__label">
-                                        휴대폰 번호를 인증하지 않은 계정
-                                    </span>
-                                    <span class="notification-muted-editor__control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-muted-editor__checkbox"
-                                            data-notification-muted-toggle="unverifiedPhone"
-                                            ${notificationFilterState.mutedNotificationOptions.unverifiedPhone ? "checked" : ""}
-                                        />
-                                        <span class="notification-muted-editor__box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-                            </div>
-
-                            <p class="notification-muted-editor__help">
-                                이 필터는 내가 팔로우하는 사람에게서 받는 알림에는 영향을 주지 않습니다.
-                                <a href="#" class="notification-muted-editor__link" data-notification-filter-link>자세히 알아보기</a>
-                            </p>
-                        </section>
-                    </section>
-                `,
-            );
-
-            return true;
-        }
-
-        if (activeDetailRoute === "privacy-muted-notifications-edit") {
-            detailTitle.textContent = "뮤트 상태의 알림";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--notification-muted" data-detail-route>
-                        <section class="notification-muted-editor">
-                            <h3 class="notification-muted-editor__title">
-                                다음 계정의 알림 뮤트하기:
-                            </h3>
-
-                            <div class="notification-muted-editor__list">
-                                <label class="notification-muted-editor__item">
-                                    <span class="notification-muted-editor__label">
-                                        내가 팔로우하지 않는 계정
-                                    </span>
-                                    <span class="notification-muted-editor__control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-muted-editor__checkbox"
-                                            data-notification-muted-toggle="nonFollowing"
-                                            ${notificationFilterState.mutedNotificationOptions.nonFollowing ? "checked" : ""}
-                                        />
-                                        <span class="notification-muted-editor__box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-muted-editor__item">
-                                    <span class="notification-muted-editor__label">
-                                        나를 팔로우하지 않는 계정
-                                    </span>
-                                    <span class="notification-muted-editor__control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-muted-editor__checkbox"
-                                            data-notification-muted-toggle="notFollowingYou"
-                                            ${notificationFilterState.mutedNotificationOptions.notFollowingYou ? "checked" : ""}
-                                        />
-                                        <span class="notification-muted-editor__box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-muted-editor__item">
-                                    <span class="notification-muted-editor__label">
-                                        새 계정
-                                    </span>
-                                    <span class="notification-muted-editor__control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-muted-editor__checkbox"
-                                            data-notification-muted-toggle="newAccount"
-                                            ${notificationFilterState.mutedNotificationOptions.newAccount ? "checked" : ""}
-                                        />
-                                        <span class="notification-muted-editor__box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-muted-editor__item">
-                                    <span class="notification-muted-editor__label">
-                                        기본 프로필 이미지를 사용하는 계정
-                                    </span>
-                                    <span class="notification-muted-editor__control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-muted-editor__checkbox"
-                                            data-notification-muted-toggle="defaultProfile"
-                                            ${notificationFilterState.mutedNotificationOptions.defaultProfile ? "checked" : ""}
-                                        />
-                                        <span class="notification-muted-editor__box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-muted-editor__item">
-                                    <span class="notification-muted-editor__label">
-                                        이메일을 인증하지 않은 계정
-                                    </span>
-                                    <span class="notification-muted-editor__control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-muted-editor__checkbox"
-                                            data-notification-muted-toggle="unverifiedEmail"
-                                            ${notificationFilterState.mutedNotificationOptions.unverifiedEmail ? "checked" : ""}
-                                        />
-                                        <span class="notification-muted-editor__box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-muted-editor__item">
-                                    <span class="notification-muted-editor__label">
-                                        휴대폰 번호를 인증하지 않은 계정
-                                    </span>
-                                    <span class="notification-muted-editor__control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-muted-editor__checkbox"
-                                            data-notification-muted-toggle="unverifiedPhone"
-                                            ${notificationFilterState.mutedNotificationOptions.unverifiedPhone ? "checked" : ""}
-                                        />
-                                        <span class="notification-muted-editor__box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-                            </div>
-
-                            <p class="notification-muted-editor__help">
-                                이 필터는 내가 팔로우하는 사람에게서 받는 알림에는 영향을 주지 않습니다.
-                                <a href="#" class="notification-muted-editor__link" data-notification-filter-link>자세히 알아보기</a>
-                            </p>
-                        </section>
-                    </section>
-                `,
-            );
-
+            syncNotificationMutedRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "notification-preferences-edit") {
             detailTitle.textContent = "환경설정";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--notification-preferences" data-detail-route>
-                        <section class="notification-preferences-editor">
-                            <p class="notification-preferences-editor__summary">
-                                알림 유형별로 환경설정을 선택하세요.
-                                <a href="#" class="notification-preferences-editor__link" data-notification-filter-link>자세히 알아보기</a>
-                            </p>
-
-                            <button
-                                type="button"
-                                class="notification-preferences-editor__item"
-                                data-notification-preferences-route="push"
-                            >
-                                <span class="notification-preferences-editor__item-title">
-                                    푸시 알림
-                                </span>
-                                <span class="notification-preferences-editor__item-arrow" aria-hidden="true">
-                                    ${buildIcon(icons.arrow)}
-                                </span>
-                            </button>
-
-                            <button
-                                type="button"
-                                class="notification-preferences-editor__item"
-                                data-notification-preferences-route="email"
-                            >
-                                <span class="notification-preferences-editor__item-title">
-                                    이메일 알림
-                                </span>
-                                <span class="notification-preferences-editor__item-arrow" aria-hidden="true">
-                                    ${buildIcon(icons.arrow)}
-                                </span>
-                            </button>
-                        </section>
-                    </section>
-                `,
-            );
-
             return true;
         }
 
         if (activeDetailRoute === "notification-email-edit") {
             detailTitle.textContent = "이메일 알림";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--notification-email" data-detail-route>
-                        <section class="notification-email-editor">
-                            <div class="notification-email-editor__top">
-                                <div class="notification-email-editor__top-row">
-                                    <h3 class="notification-email-editor__title">
-                                        이메일 알림
-                                    </h3>
-                                    <label class="notification-email-editor__switch">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-email-editor__switch-input"
-                                            data-notification-email-toggle="enabled"
-                                            ${notificationPreferenceState.isEmailEnabled ? "checked" : ""}
-                                        />
-                                        <span class="notification-email-editor__switch-track" aria-hidden="true">
-                                            <span class="notification-email-editor__switch-thumb"></span>
-                                        </span>
-                                    </label>
-                                </div>
-                                <p class="notification-email-editor__summary">
-                                    X에서 자리를 비운 사이 무슨 일이 일어났는지 이메일로 알아볼 수 있습니다. 언제든 이 설정을 끌 수 있습니다.
-                                    <a href="#" class="notification-email-editor__link" data-notification-filter-link>자세히 알아보기</a>
-                                </p>
-                            </div>
-
-                            <div class="notification-email-editor__divider"></div>
-
-                            <section class="notification-email-editor__section">
-                                <h4 class="notification-email-editor__section-title">
-                                    나 또는 내 게시물 관련
-                                </h4>
-
-                                <label class="notification-email-editor__check-item">
-                                    <span class="notification-email-editor__check-label">새 알림</span>
-                                    <span class="notification-email-editor__check-control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-email-editor__checkbox"
-                                            data-notification-email-toggle="newNotifications"
-                                            ${notificationPreferenceState.emailAlerts.newNotifications ? "checked" : ""}
-                                        />
-                                        <span class="notification-email-editor__checkbox-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-email-editor__check-item">
-                                    <span class="notification-email-editor__check-label">쪽지</span>
-                                    <span class="notification-email-editor__check-control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-email-editor__checkbox"
-                                            data-notification-email-toggle="messages"
-                                            ${notificationPreferenceState.emailAlerts.messages ? "checked" : ""}
-                                        />
-                                        <span class="notification-email-editor__checkbox-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-email-editor__check-item">
-                                    <span class="notification-email-editor__check-label">내게 이메일로 전송된 게시물</span>
-                                    <span class="notification-email-editor__check-control">
-                                        <input
-                                            type="checkbox"
-                                            class="notification-email-editor__checkbox"
-                                            data-notification-email-toggle="emailedPosts"
-                                            ${notificationPreferenceState.emailAlerts.emailedPosts ? "checked" : ""}
-                                        />
-                                        <span class="notification-email-editor__checkbox-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-                            </section>
-
-                            <section class="notification-email-editor__section notification-email-editor__section--radio">
-                                <h4 class="notification-email-editor__section-title">
-                                    인기 게시물 및 스토리
-                                </h4>
-
-                                <label class="notification-email-editor__radio-item">
-                                    <span class="notification-email-editor__radio-label">매일 보내기</span>
-                                    <span class="notification-email-editor__radio-control">
-                                        <input
-                                            name="notificationEmailDigest"
-                                            type="radio"
-                                            class="notification-email-editor__radio"
-                                            value="daily"
-                                            data-notification-email-digest
-                                            ${notificationPreferenceState.emailDigest === "daily" ? "checked" : ""}
-                                        />
-                                        <span class="notification-email-editor__radio-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-email-editor__radio-item">
-                                    <span class="notification-email-editor__radio-label">매주 보내기</span>
-                                    <span class="notification-email-editor__radio-control">
-                                        <input
-                                            name="notificationEmailDigest"
-                                            type="radio"
-                                            class="notification-email-editor__radio"
-                                            value="weekly"
-                                            data-notification-email-digest
-                                            ${notificationPreferenceState.emailDigest === "weekly" ? "checked" : ""}
-                                        />
-                                        <span class="notification-email-editor__radio-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-email-editor__radio-item">
-                                    <span class="notification-email-editor__radio-label">수시로 보내기</span>
-                                    <span class="notification-email-editor__radio-control">
-                                        <input
-                                            name="notificationEmailDigest"
-                                            type="radio"
-                                            class="notification-email-editor__radio"
-                                            value="often"
-                                            data-notification-email-digest
-                                            ${notificationPreferenceState.emailDigest === "often" ? "checked" : ""}
-                                        />
-                                        <span class="notification-email-editor__radio-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-
-                                <label class="notification-email-editor__radio-item">
-                                    <span class="notification-email-editor__radio-label">끄기</span>
-                                    <span class="notification-email-editor__radio-control">
-                                        <input
-                                            name="notificationEmailDigest"
-                                            type="radio"
-                                            class="notification-email-editor__radio"
-                                            value="off"
-                                            data-notification-email-digest
-                                            ${notificationPreferenceState.emailDigest === "off" ? "checked" : ""}
-                                        />
-                                        <span class="notification-email-editor__radio-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-                            </section>
-
-                            <label class="notification-email-editor__check-item notification-email-editor__check-item--tail">
-                                <span class="notification-email-editor__check-label">내 게시물 실적 관련 업데이트</span>
-                                <span class="notification-email-editor__check-control">
-                                    <input
-                                        type="checkbox"
-                                        class="notification-email-editor__checkbox"
-                                        data-notification-email-toggle="performanceUpdates"
-                                        ${notificationPreferenceState.emailAlerts.performanceUpdates ? "checked" : ""}
-                                    />
-                                    <span class="notification-email-editor__checkbox-box" aria-hidden="true">
-                                        ${buildIcon(
-                                            "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                        )}
-                                    </span>
-                                </span>
-                            </label>
-
-                            <div class="notification-email-editor__footer-divider"></div>
-                        </section>
-                    </section>
-                `,
-            );
-
+            syncNotificationEmailRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "notification-push-edit") {
             detailTitle.textContent = "푸시 알림";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--notification-push" data-detail-route>
-                        <section class="notification-push-editor">
-                            <div class="notification-push-editor__top">
-                                <div class="notification-push-editor__copy">
-                                    <h3 class="notification-push-editor__title">
-                                        푸시 알림
-                                    </h3>
-                                    <p class="notification-push-editor__summary">
-                                        자리를 비운 동안 X에서 일어난 일에 대한 푸시 알림을 받아 보세요. 알림은 언제든지 끌 수 있습니다. 이 선택 사항은 이 브라우저에서 사용하는 모든 계정에 해당됩니다.
-                                    </p>
-                                </div>
-                                <label class="notification-push-editor__switch">
-                                    <input
-                                        type="checkbox"
-                                        class="notification-push-editor__switch-input"
-                                        data-notification-push-toggle
-                                        ${notificationPreferenceState.isPushEnabled ? "checked" : ""}
-                                    />
-                                    <span class="notification-push-editor__switch-track" aria-hidden="true">
-                                        <span class="notification-push-editor__switch-thumb"></span>
-                                    </span>
-                                </label>
-                            </div>
-
-                            <div class="notification-push-editor__divider"></div>
-
-                            <section class="notification-push-editor__empty">
-                                <h4 class="notification-push-editor__empty-title">
-                                    푸시 알림 켜기
-                                </h4>
-                                <p class="notification-push-editor__empty-copy">
-                                    푸시 알림을 통해 지금 일어나는 일에 대한 소식을 실시간으로 받아보세요. X에 로그인하지 않아도 알림을 받을 수 있습니다. 알림은 언제든지 끌 수 있습니다.
-                                </p>
-                                <button
-                                    type="button"
-                                    class="notification-push-editor__enable"
-                                    data-notification-push-enable
-                                >
-                                    켜기
-                                </button>
-                            </section>
-                        </section>
-                    </section>
-                `,
-            );
-
+            syncNotificationPushRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "privacy-mute-block-edit") {
             detailTitle.textContent = "뮤트 및 차단";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--privacy-mute-block" data-detail-route>
-                        <section class="privacy-mute-block-editor">
-                            <p class="privacy-mute-block-editor__summary">
-                                내가 뮤트했거나 차단한 계정, 단어 및 알림을 관리합니다.
-                            </p>
-
-                            <button
-                                type="button"
-                                class="privacy-mute-block-editor__item"
-                                data-privacy-mute-block-item="blocked-accounts"
-                            >
-                                <span class="privacy-mute-block-editor__item-title">
-                                    차단한 계정
-                                </span>
-                                <span class="privacy-mute-block-editor__item-arrow" aria-hidden="true">
-                                    ${buildIcon(icons.arrow)}
-                                </span>
-                            </button>
-
-                            <button
-                                type="button"
-                                class="privacy-mute-block-editor__item"
-                                data-privacy-mute-block-item="muted-accounts"
-                            >
-                                <span class="privacy-mute-block-editor__item-title">
-                                    뮤트한 계정
-                                </span>
-                                <span class="privacy-mute-block-editor__item-arrow" aria-hidden="true">
-                                    ${buildIcon(icons.arrow)}
-                                </span>
-                            </button>
-
-                            <button
-                                type="button"
-                                class="privacy-mute-block-editor__item"
-                                data-privacy-mute-block-item="muted-words"
-                            >
-                                <span class="privacy-mute-block-editor__item-title">
-                                    뮤트한 단어
-                                </span>
-                                <span class="privacy-mute-block-editor__item-arrow" aria-hidden="true">
-                                    ${buildIcon(icons.arrow)}
-                                </span>
-                            </button>
-
-                            <button
-                                type="button"
-                                class="privacy-mute-block-editor__item"
-                                data-privacy-mute-block-item="muted-notifications"
-                            >
-                                <span class="privacy-mute-block-editor__item-title">
-                                    뮤트 상태의 알림
-                                </span>
-                                <span class="privacy-mute-block-editor__item-arrow" aria-hidden="true">
-                                    ${buildIcon(icons.arrow)}
-                                </span>
-                            </button>
-                        </section>
-                    </section>
-                `,
-            );
-
             return true;
         }
 
         if (activeDetailRoute === "privacy-chat-edit") {
             detailTitle.textContent = "채팅";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--privacy-chat" data-detail-route>
-                        <section class="privacy-chat-editor">
-                            <section class="privacy-chat-editor__section privacy-chat-editor__section--request">
-                                <h3 class="privacy-chat-editor__section-title">
-                                    다음 사용자의 쪽지 요청 허용
-                                </h3>
-                                <p class="privacy-chat-editor__section-copy">
-                                    내가 팔로우하는 사용자가 보낸 쪽지는 항상 받을 수 있습니다.
-                                    <a href="#" class="privacy-chat-editor__link" data-privacy-chat-link>자세히 알아보기</a>
-                                </p>
-
-                                <label class="privacy-chat-editor__request-option">
-                                    <span class="privacy-chat-editor__request-label">
-                                        받지 않음
-                                    </span>
-                                    <span class="privacy-chat-editor__request-control">
-                                        <input
-                                            type="radio"
-                                            name="privacyChatAllow"
-                                            value="none"
-                                            class="privacy-chat-editor__radio"
-                                            data-privacy-chat-allow="none"
-                                            ${privacyChatState.allow === "none" ? "checked" : ""}
-                                        />
-                                        <span class="privacy-chat-editor__radio-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                                "privacy-chat-editor__radio-icon",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-
-                                <label class="privacy-chat-editor__request-option">
-                                    <span class="privacy-chat-editor__request-label">
-                                        인증된 사용자
-                                    </span>
-                                    <span class="privacy-chat-editor__request-control">
-                                        <input
-                                            type="radio"
-                                            name="privacyChatAllow"
-                                            value="verified"
-                                            class="privacy-chat-editor__radio"
-                                            data-privacy-chat-allow="verified"
-                                            ${privacyChatState.allow === "verified" ? "checked" : ""}
-                                        />
-                                        <span class="privacy-chat-editor__radio-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                                "privacy-chat-editor__radio-icon",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-
-                                <label class="privacy-chat-editor__request-option">
-                                    <span class="privacy-chat-editor__request-label">
-                                        모든 사람
-                                    </span>
-                                    <span class="privacy-chat-editor__request-control">
-                                        <input
-                                            type="radio"
-                                            name="privacyChatAllow"
-                                            value="everyone"
-                                            class="privacy-chat-editor__radio"
-                                            data-privacy-chat-allow="everyone"
-                                            ${privacyChatState.allow === "everyone" ? "checked" : ""}
-                                        />
-                                        <span class="privacy-chat-editor__radio-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                                "privacy-chat-editor__radio-icon",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-                            </section>
-
-                            <section class="privacy-chat-editor__section privacy-chat-editor__section--toggle">
-                                <label class="privacy-chat-editor__toggle-row">
-                                    <span class="privacy-chat-editor__toggle-copy">
-                                        <span class="privacy-chat-editor__toggle-title">
-                                            저품질 받은 쪽지 필터링하기
-                                        </span>
-                                        <span class="privacy-chat-editor__toggle-description">
-                                            스팸 또는 저질스러운 내용이 포함된 것으로 파악되는 쪽지 요청을 숨깁니다. 이러한 요청은 쪽지 요청함의 하단에 있는 별도의 받은 쪽지함으로 전송됩니다. 원하는 경우 언제든지 확인할 수 있습니다.
-                                            <a href="#" class="privacy-chat-editor__link" data-privacy-chat-link>자세히 알아보기</a>
-                                        </span>
-                                    </span>
-                                    <span class="privacy-chat-editor__toggle-control">
-                                        <input
-                                            type="checkbox"
-                                            class="privacy-chat-editor__checkbox"
-                                            data-privacy-chat-toggle="filter-low-quality"
-                                            ${privacyChatState.isLowQualityFilterEnabled ? "checked" : ""}
-                                        />
-                                        <span class="privacy-chat-editor__checkbox-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                                "privacy-chat-editor__checkbox-icon",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-                            </section>
-
-                            <section class="privacy-chat-editor__section privacy-chat-editor__section--toggle">
-                                <label class="privacy-chat-editor__toggle-row">
-                                    <span class="privacy-chat-editor__toggle-copy">
-                                        <span class="privacy-chat-editor__toggle-title">
-                                            읽음 표시 보기
-                                        </span>
-                                        <span class="privacy-chat-editor__toggle-description">
-                                            쪽지를 주고 받은 사람들이 내가 메시지를 확인했을 때를 알 수 있도록 허용합니다. 읽음 표시는 쪽지 요청에 나타나지 않습니다.
-                                            <a href="#" class="privacy-chat-editor__link" data-privacy-chat-link>자세히 알아보기</a>
-                                        </span>
-                                    </span>
-                                    <span class="privacy-chat-editor__toggle-control">
-                                        <input
-                                            type="checkbox"
-                                            class="privacy-chat-editor__checkbox"
-                                            data-privacy-chat-toggle="read-receipts"
-                                            ${privacyChatState.areReadReceiptsEnabled ? "checked" : ""}
-                                        />
-                                        <span class="privacy-chat-editor__checkbox-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                                "privacy-chat-editor__checkbox-icon",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-                            </section>
-                        </section>
-                    </section>
-                `,
-            );
-
+            syncPrivacyChatRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "privacy-discoverability-edit") {
             detailTitle.textContent = "계정찾기 및 연락처";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--privacy-discoverability" data-detail-route>
-                        <section class="privacy-discoverability-editor">
-                            <p class="privacy-discoverability-editor__summary">
-                                계정찾기 설정을 제어하고 가져온 연락처를 관리합니다.
-                            </p>
-
-                            <section class="privacy-discoverability-editor__section privacy-discoverability-editor__section--search">
-                                <h3 class="privacy-discoverability-editor__section-title">
-                                    검색 가능성
-                                </h3>
-                                <p class="privacy-discoverability-editor__section-copy">
-                                    내 이메일 주소 또는 휴대폰 번호를 알고 있는 사람들이 X에서 나를 찾고 연락할 수 있게 할지 여부를 결정합니다.
-                                </p>
-
-                                <label class="privacy-discoverability-editor__toggle-row">
-                                    <span class="privacy-discoverability-editor__toggle-copy">
-                                        <span class="privacy-discoverability-editor__toggle-title">
-                                            내 이메일 주소를 알고 있는 사람들이 X에서 나를 찾을 수 있도록 허용
-                                        </span>
-                                        <span class="privacy-discoverability-editor__toggle-description">
-                                            내 이메일 주소를 알고 있는 사람들이 X에서 나를 찾고 연락할 수 있도록 합니다.
-                                            <a href="#" class="privacy-discoverability-editor__link" data-privacy-discoverability-link>자세히 알아보기</a>
-                                        </span>
-                                    </span>
-                                    <span class="privacy-discoverability-editor__toggle-control">
-                                        <input
-                                            type="checkbox"
-                                            class="privacy-discoverability-editor__checkbox"
-                                            data-privacy-discoverability-toggle="email"
-                                            ${privacyDiscoverabilityState.isEmailDiscoverable ? "checked" : ""}
-                                        />
-                                        <span class="privacy-discoverability-editor__checkbox-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                                "privacy-discoverability-editor__checkbox-icon",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-
-                                <label class="privacy-discoverability-editor__toggle-row">
-                                    <span class="privacy-discoverability-editor__toggle-copy">
-                                        <span class="privacy-discoverability-editor__toggle-title">
-                                            내 휴대폰 번호를 알고 있는 사람들이 X에서 나를 찾을 수 있도록 허용
-                                        </span>
-                                        <span class="privacy-discoverability-editor__toggle-description">
-                                            내 휴대폰 번호를 알고 있는 사람이 X에서 나를 찾고 연락할 수 있도록 합니다.
-                                            <a href="#" class="privacy-discoverability-editor__link" data-privacy-discoverability-link>자세히 알아보기</a>
-                                        </span>
-                                    </span>
-                                    <span class="privacy-discoverability-editor__toggle-control">
-                                        <input
-                                            type="checkbox"
-                                            class="privacy-discoverability-editor__checkbox"
-                                            data-privacy-discoverability-toggle="phone"
-                                            ${privacyDiscoverabilityState.isPhoneDiscoverable ? "checked" : ""}
-                                        />
-                                        <span class="privacy-discoverability-editor__checkbox-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                                "privacy-discoverability-editor__checkbox-icon",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-                            </section>
-
-                            <section class="privacy-discoverability-editor__section privacy-discoverability-editor__section--contacts">
-                                <h3 class="privacy-discoverability-editor__section-title">
-                                    연락처
-                                </h3>
-                                <p class="privacy-discoverability-editor__section-copy">
-                                    모바일 디바이스에서 가져온 연락처를 관리합니다.
-                                    <a href="#" class="privacy-discoverability-editor__link" data-privacy-discoverability-link>자세히 알아보기</a>
-                                </p>
-
-                                <button
-                                    type="button"
-                                    class="privacy-discoverability-editor__manage-row"
-                                    data-privacy-discoverability-manage="contacts"
-                                >
-                                    <span class="privacy-discoverability-editor__manage-title">
-                                        연락처 관리
-                                    </span>
-                                    <span class="privacy-discoverability-editor__manage-arrow" aria-hidden="true">
-                                        ${buildIcon(icons.arrow)}
-                                    </span>
-                                </button>
-                            </section>
-                        </section>
-                    </section>
-                `,
-            );
-
+            syncPrivacyDiscoverabilityRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "privacy-blocked-accounts-edit") {
             detailTitle.textContent = "차단한 계정";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--privacy-blocked-accounts" data-detail-route>
-                        <section class="privacy-blocked-accounts-editor">
-                            <p class="privacy-blocked-accounts-editor__summary">
-                                사용자를 차단하면 해당 사용자는 나를 팔로우하거나 내게 쪽지를 보낼 수 없고, 해당 사용자의 알림이 표시되지 않습니다.
-                                <a href="#" class="privacy-blocked-accounts-editor__link" data-privacy-blocked-accounts-link>자세히 알아보기</a>
-                            </p>
-
-                            <section class="privacy-blocked-accounts-editor__empty">
-                                <h3 class="privacy-blocked-accounts-editor__empty-title">
-                                    원치 않는 계정 차단하기
-                                </h3>
-                                <p class="privacy-blocked-accounts-editor__empty-copy">
-                                    차단된 사용자는 나를 팔로우하거나 내게 쪽지를 보낼 수 없으며, 해당 사용자에 대한 알림이 표시되지 않습니다.
-                                    <a href="#" class="privacy-blocked-accounts-editor__link" data-privacy-blocked-accounts-link>자세히 알아보기</a>
-                                </p>
-                            </section>
-                        </section>
-                    </section>
-                `,
-            );
-
             return true;
         }
 
         if (activeDetailRoute === "privacy-muted-accounts-edit") {
             detailTitle.textContent = "뮤트한 계정";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--privacy-muted-accounts" data-detail-route>
-                        <section class="privacy-muted-accounts-editor">
-                            <p class="privacy-muted-accounts-editor__summary">
-                                뮤트한 계정의 게시물은 홈 타임라인에 표시되지 않으며, 해당 계정에 대한 알림도 표시되지 않습니다.
-                                <a href="#" class="privacy-muted-accounts-editor__link" data-privacy-muted-accounts-link>자세히 알아보기</a>
-                            </p>
-
-                            <section class="privacy-muted-accounts-editor__empty">
-                                <h3 class="privacy-muted-accounts-editor__empty-title">
-                                    원치 않는 계정 뮤트하기
-                                </h3>
-                                <p class="privacy-muted-accounts-editor__empty-copy">
-                                    뮤트한 사용자의 게시물은 홈 타임라인에 표시되지 않으며, 해당 사용자에 대한 알림도 표시되지 않습니다.
-                                    <a href="#" class="privacy-muted-accounts-editor__link" data-privacy-muted-accounts-link>자세히 알아보기</a>
-                                </p>
-                            </section>
-                        </section>
-                    </section>
-                `,
-            );
-
             return true;
         }
 
@@ -2307,617 +1462,52 @@ document.addEventListener("DOMContentLoaded", () => {
                 ariaLabel: "뮤트한 단어 추가",
                 action: "muted-words-add",
             });
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--privacy-muted-words" data-detail-route>
-                        <section class="privacy-muted-words-editor">
-                            <section class="privacy-muted-words-editor__empty">
-                                <h3 class="privacy-muted-words-editor__empty-title">
-                                    뮤트할 단어 추가
-                                </h3>
-                                <p class="privacy-muted-words-editor__empty-copy">
-                                    단어를 뮤트하면 해당 단어를 포함한 게시물이 홈 타임라인에서 보이지 않으며, 관련 알림도 받지 않게 됩니다.
-                                    <a href="#" class="privacy-muted-words-editor__link" data-privacy-muted-words-link>자세히 알아보기</a>
-                                </p>
-                            </section>
-
-                            <section class="privacy-muted-words-editor__list" data-privacy-muted-words-list>
-                                <!-- 서버에서 뮤트한 단어 목록을 렌더링할 때 아래 아이템 구조를 반복해서 사용합니다. -->
-                                <article class="privacy-muted-word-item" data-privacy-muted-word-item>
-                                    <div class="privacy-muted-word-item__copy">
-                                        <strong class="privacy-muted-word-item__term">
-                                            방귀 뿡뿡
-                                        </strong>
-                                        <span class="privacy-muted-word-item__meta">
-                                            영원히
-                                        </span>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        class="privacy-muted-word-item__action"
-                                        aria-label="뮤트한 단어 편집"
-                                    >
-                                        ${buildIcon(icons.mute, "privacy-muted-word-item__action-icon")}
-                                    </button>
-                                </article>
-                            </section>
-                        </section>
-                    </section>
-                `,
-            );
-
             return true;
         }
 
         if (activeDetailRoute === "privacy-muted-words-add-edit") {
             detailTitle.textContent = "뮤트할 단어 추가하기";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--privacy-muted-words-add" data-detail-route>
-                        <form class="privacy-muted-word-form" data-privacy-muted-word-form novalidate>
-                            <div class="privacy-muted-word-form__field-shell" data-privacy-muted-word-field>
-                                <label class="privacy-muted-word-form__field">
-                                    <input
-                                        type="text"
-                                        class="privacy-muted-word-form__input"
-                                        value="${mutedWordFormState.value}"
-                                        placeholder="단어 또는 문구를 입력하세요"
-                                        aria-label="단어 또는 문구를 입력하세요"
-                                        data-privacy-muted-word-input
-                                    />
-                                </label>
-                            </div>
-                            <p class="privacy-muted-word-form__help">
-                                한 번에 단어, 문구, @사용자 아이디, 해시태그 중 하나만 뮤트할 수 있습니다.
-                                <a href="#" class="privacy-muted-word-form__link" data-privacy-muted-word-link>자세히 알아보기</a>
-                            </p>
-
-                            <section class="privacy-muted-word-form__section">
-                                <h3 class="privacy-muted-word-form__section-title">
-                                    다음에서 뮤트
-                                </h3>
-
-                                <label class="privacy-muted-word-form__check-row">
-                                    <span class="privacy-muted-word-form__check-label">
-                                        홈 타임라인
-                                    </span>
-                                    <span class="privacy-muted-word-form__check-control">
-                                        <input
-                                            type="checkbox"
-                                            class="privacy-muted-word-form__checkbox"
-                                            data-privacy-muted-word-timeline-toggle
-                                            ${mutedWordFormState.muteFromTimeline ? "checked" : ""}
-                                        />
-                                        <span class="privacy-muted-word-form__checkbox-box" aria-hidden="true">
-                                            ${buildIcon(
-                                                "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                            )}
-                                        </span>
-                                    </span>
-                                </label>
-
-                                <label class="privacy-muted-word-form__switch-row">
-                                    <span class="privacy-muted-word-form__switch-label">
-                                        알림
-                                    </span>
-                                    <span class="privacy-muted-word-form__switch-control">
-                                        <input
-                                            type="checkbox"
-                                            class="privacy-muted-word-form__switch-input"
-                                            data-privacy-muted-word-notifications-toggle
-                                            ${mutedWordFormState.muteNotifications ? "checked" : ""}
-                                        />
-                                        <span class="privacy-muted-word-form__switch-track" aria-hidden="true">
-                                            <span class="privacy-muted-word-form__switch-thumb"></span>
-                                        </span>
-                                    </span>
-                                </label>
-
-                                <div class="privacy-muted-word-form__divider"></div>
-
-                                <label class="privacy-muted-word-form__radio-row">
-                                    <span class="privacy-muted-word-form__radio-label">
-                                        모든 사용자
-                                    </span>
-                                    <span class="privacy-muted-word-form__radio-control">
-                                        <input
-                                            type="radio"
-                                            name="mutedWordAudience"
-                                            class="privacy-muted-word-form__radio"
-                                            value="everyone"
-                                            data-privacy-muted-word-audience
-                                            ${mutedWordFormState.notificationAudience === "everyone" ? "checked" : ""}
-                                        />
-                                        <span class="privacy-muted-word-form__radio-box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="privacy-muted-word-form__radio-row">
-                                    <span class="privacy-muted-word-form__radio-label">
-                                        내가 팔로우하지 않는 사람들
-                                    </span>
-                                    <span class="privacy-muted-word-form__radio-control">
-                                        <input
-                                            type="radio"
-                                            name="mutedWordAudience"
-                                            class="privacy-muted-word-form__radio"
-                                            value="non-following"
-                                            data-privacy-muted-word-audience
-                                            ${mutedWordFormState.notificationAudience === "non-following" ? "checked" : ""}
-                                        />
-                                        <span class="privacy-muted-word-form__radio-box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-                            </section>
-
-                            <section class="privacy-muted-word-form__section privacy-muted-word-form__section--duration">
-                                <h3 class="privacy-muted-word-form__section-title">
-                                    기간
-                                </h3>
-
-                                <label class="privacy-muted-word-form__radio-row">
-                                    <span class="privacy-muted-word-form__radio-label">
-                                        해당 단어를 언뮤트할 때까지
-                                    </span>
-                                    <span class="privacy-muted-word-form__radio-control">
-                                        <input
-                                            type="radio"
-                                            name="mutedWordDuration"
-                                            class="privacy-muted-word-form__radio"
-                                            value="until-unmuted"
-                                            data-privacy-muted-word-duration
-                                            ${mutedWordFormState.duration === "until-unmuted" ? "checked" : ""}
-                                        />
-                                        <span class="privacy-muted-word-form__radio-box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="privacy-muted-word-form__radio-row">
-                                    <span class="privacy-muted-word-form__radio-label">
-                                        24시간
-                                    </span>
-                                    <span class="privacy-muted-word-form__radio-control">
-                                        <input
-                                            type="radio"
-                                            name="mutedWordDuration"
-                                            class="privacy-muted-word-form__radio"
-                                            value="24h"
-                                            data-privacy-muted-word-duration
-                                            ${mutedWordFormState.duration === "24h" ? "checked" : ""}
-                                        />
-                                        <span class="privacy-muted-word-form__radio-box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="privacy-muted-word-form__radio-row">
-                                    <span class="privacy-muted-word-form__radio-label">
-                                        7일
-                                    </span>
-                                    <span class="privacy-muted-word-form__radio-control">
-                                        <input
-                                            type="radio"
-                                            name="mutedWordDuration"
-                                            class="privacy-muted-word-form__radio"
-                                            value="7d"
-                                            data-privacy-muted-word-duration
-                                            ${mutedWordFormState.duration === "7d" ? "checked" : ""}
-                                        />
-                                        <span class="privacy-muted-word-form__radio-box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-
-                                <label class="privacy-muted-word-form__radio-row">
-                                    <span class="privacy-muted-word-form__radio-label">
-                                        30일
-                                    </span>
-                                    <span class="privacy-muted-word-form__radio-control">
-                                        <input
-                                            type="radio"
-                                            name="mutedWordDuration"
-                                            class="privacy-muted-word-form__radio"
-                                            value="30d"
-                                            data-privacy-muted-word-duration
-                                            ${mutedWordFormState.duration === "30d" ? "checked" : ""}
-                                        />
-                                        <span class="privacy-muted-word-form__radio-box" aria-hidden="true"></span>
-                                    </span>
-                                </label>
-                            </section>
-
-                            <div class="privacy-muted-word-form__footer">
-                                <button
-                                    type="submit"
-                                    class="privacy-muted-word-form__save"
-                                    data-privacy-muted-word-save
-                                    disabled
-                                >
-                                    저장
-                                </button>
-                            </div>
-                        </form>
-                    </section>
-                `,
-            );
-
-            const mutedWordForm = detailContent.querySelector(
-                "[data-privacy-muted-word-form]",
-            );
-            const mutedWordInput = detailContent.querySelector(
-                "[data-privacy-muted-word-input]",
-            );
-            const mutedWordField = detailContent.querySelector(
-                "[data-privacy-muted-word-field]",
-            );
-            const mutedWordSave = detailContent.querySelector(
-                "[data-privacy-muted-word-save]",
-            );
-
-            if (
-                mutedWordForm instanceof HTMLFormElement &&
-                mutedWordInput instanceof HTMLInputElement &&
-                mutedWordField instanceof HTMLElement &&
-                mutedWordSave instanceof HTMLButtonElement
-            ) {
-                const syncMutedWordFormState = () => {
-                    const hasValue = mutedWordInput.value.trim().length > 0;
-                    mutedWordField.classList.toggle(
-                        "privacy-muted-word-form__field-shell--active",
-                        document.activeElement === mutedWordInput || hasValue,
-                    );
-                    mutedWordSave.disabled = !hasValue;
-                    mutedWordSave.classList.toggle(
-                        "privacy-muted-word-form__save--enabled",
-                        hasValue,
-                    );
-                };
-
-                mutedWordInput.addEventListener(
-                    "focus",
-                    syncMutedWordFormState,
-                );
-                mutedWordInput.addEventListener("blur", syncMutedWordFormState);
-                mutedWordInput.addEventListener("input", () => {
-                    mutedWordFormState.value = mutedWordInput.value;
-                    syncMutedWordFormState();
-                });
-
-                mutedWordForm.addEventListener("submit", (event) => {
-                    event.preventDefault();
-                    syncMutedWordFormState();
-                });
-
-                syncMutedWordFormState();
-            }
-
+            bindRouteOnce(routeRoot, "boundMutedWordForm", bindMutedWordFormRoute);
+            syncMutedWordFormRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "privacy-posts-edit") {
             detailTitle.textContent = "내 게시물";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--privacy-posts" data-detail-route>
-                        <section class="privacy-posts-editor">
-                            <p class="privacy-posts-editor__summary">
-                                게시물과 관련된 정보를 관리합니다.
-                            </p>
-
-                            <label class="privacy-posts-editor__sensitive">
-                                <span class="privacy-posts-editor__sensitive-copy">
-                                    <span class="privacy-posts-editor__sensitive-title">
-                                        게시하는 미디어를 민감한 내용이 포함될 수 있는 미디어로 표시하기
-                                    </span>
-                                    <span class="privacy-posts-editor__sensitive-description">
-                                        활성화하면 게시하는 사진과 동영상이 민감한 콘텐츠가 표시되기를 원치 않는 사람들에게 민감한 콘텐츠로 표시됩니다.
-                                        <a href="#" class="privacy-posts-editor__link" data-privacy-posts-link>자세히 알아보기</a>
-                                    </span>
-                                </span>
-                                <span class="privacy-posts-editor__sensitive-control">
-                                    <input
-                                        type="checkbox"
-                                        class="privacy-posts-editor__checkbox"
-                                        data-privacy-posts-sensitive-toggle
-                                        ${privacyPostsState.isSensitiveMediaMarked ? "checked" : ""}
-                                    />
-                                    <span class="privacy-posts-editor__checkbox-box" aria-hidden="true">
-                                        ${buildIcon(
-                                            "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                        )}
-                                    </span>
-                                </span>
-                            </label>
-
-                            <button
-                                type="button"
-                                class="privacy-posts-editor__item"
-                                data-privacy-posts-route="location"
-                            >
-                                <span class="privacy-posts-editor__item-title">
-                                    게시물에 위치 정보 넣기
-                                </span>
-                                <span class="privacy-posts-editor__item-arrow" aria-hidden="true">
-                                    ${buildIcon(icons.arrow)}
-                                </span>
-                            </button>
-                        </section>
-                    </section>
-                `,
-            );
-
+            syncPrivacyPostsRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "privacy-posts-location-edit") {
             detailTitle.textContent = "게시물에 위치 정보 넣기";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--privacy-posts-location" data-detail-route>
-                        <section class="privacy-posts-location-editor">
-                            <p class="privacy-posts-location-editor__summary">
-                                활성화하면 게시물에 위치 정보를 첨부할 수 있습니다.
-                                <a href="#" class="privacy-posts-location-editor__link" data-privacy-posts-location-link>자세히 알아보기</a>
-                            </p>
-
-                            <label class="privacy-posts-location-editor__toggle-row">
-                                <span class="privacy-posts-location-editor__toggle-title">
-                                    게시물에 위치 정보 넣기
-                                </span>
-                                <span class="privacy-posts-location-editor__toggle-control">
-                                    <input
-                                        type="checkbox"
-                                        class="privacy-posts-location-editor__checkbox"
-                                        data-privacy-posts-location-toggle
-                                        ${privacyPostsState.isLocationEnabled ? "checked" : ""}
-                                    />
-                                    <span class="privacy-posts-location-editor__checkbox-box" aria-hidden="true">
-                                        ${buildIcon(
-                                            "M9.64 18.952l-5.55-4.861 1.317-1.504 3.951 3.459 8.459-10.948L19.4 6.32 9.64 18.952z",
-                                        )}
-                                    </span>
-                                </span>
-                            </label>
-
-                            <button
-                                type="button"
-                                class="privacy-posts-location-editor__delete"
-                                data-privacy-posts-location-delete
-                            >
-                                게시물에 추가된 모든 위치 정보를 삭제합니다
-                            </button>
-                        </section>
-                    </section>
-                `,
-            );
-
+            syncPrivacyPostsLocationRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "phone-edit") {
             detailTitle.textContent = "휴대폰 변경";
-            const phoneItem = accountInfoItems.find(
-                (item) => item.id === "phone",
-            );
-            const phoneValue = phoneItem?.value || "+821099139076";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--phone" data-detail-route>
-                        <div class="phone-editor">
-                            <button
-                                type="button"
-                                class="phone-editor__action"
-                                data-modal-type="phone-add"
-                            >
-                                휴대폰 번호 추가
-                            </button>
-                        </div>
-                        <!-- 서버에서 휴대폰 인증 완료 후 hidden을 제거하고 값을 주입해 기존 휴대폰 번호 추가 화면을 대체합니다. -->
-                        <section
-                            class="phone-editor phone-editor--verified"
-                            data-phone-verified-screen
-                            hidden
-                            aria-hidden="true"
-                        >
-                            <div class="phone-editor__current-card">
-                                <span class="phone-editor__current-label">
-                                    현재 이메일
-                                </span>
-                                <span class="phone-editor__current-value">
-                                    ${phoneValue}
-                                </span>
-                            </div>
-                            <div class="phone-editor__verified-actions">
-                                <button
-                                    type="button"
-                                    class="phone-editor__verified-action phone-editor__verified-action--update"
-                                >
-                                    휴대폰 번호 업데이트
-                                </button>
-                                <button
-                                    type="button"
-                                    class="phone-editor__verified-action phone-editor__verified-action--delete"
-                                >
-                                    휴대폰 번호 삭제
-                                </button>
-                            </div>
-                        </section>
-                    </section>
-                `,
-            );
-
+            syncPhoneRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "email-edit") {
             detailTitle.textContent = "이메일 변경";
-            const emailItem = accountInfoItems.find(
-                (item) => item.id === "email",
-            );
-            const emailValue = emailItem?.value || "tjdgh1851@gmail.com";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--email" data-detail-route>
-                        <section class="email-editor">
-                            <div class="email-editor__current-card">
-                                <span class="email-editor__current-label">
-                                    현재 이메일
-                                </span>
-                                <span class="email-editor__current-value">
-                                    ${emailValue}
-                                </span>
-                            </div>
-                            <div class="email-editor__actions">
-                                <button
-                                    type="button"
-                                    class="email-editor__action"
-                                    data-modal-type="email-add"
-                                >
-                                    이메일 주소 업데이트
-                                </button>
-                            </div>
-                        </section>
-                    </section>
-                `,
-            );
-
+            syncEmailRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "country-edit") {
             detailTitle.textContent = "국가 변경";
-            const countryItem = accountInfoItems.find(
-                (item) => item.id === "country",
-            );
-            const currentCountry = countryItem?.value || "대한민국";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--country" data-detail-route>
-                        <section class="country-editor">
-                            <div class="country-editor__section">
-                                <label class="country-editor__field">
-                                    <span class="country-editor__label">국가</span>
-                                    <select
-                                        class="country-editor__select"
-                                        aria-label="국가"
-                                        data-country-select
-                                    >
-                                        ${countryOptionMarkup}
-                                    </select>
-                                    <span class="country-editor__arrow" aria-hidden="true">
-                                        ${buildIcon(
-                                            "M3.543 8.96l1.414-1.42L12 14.59l7.043-7.05 1.414 1.42L12 17.41 3.543 8.96z",
-                                        )}
-                                    </span>
-                                </label>
-                                <p class="country-editor__help">
-                                    사용자 계정과 연결된 기본 국가입니다. 사용자의 국가는 X 환경을 맞춤화하는 데 사용됩니다.
-                                    <a href="#" class="country-editor__help-link">자세히 알아보기</a>
-                                </p>
-                            </div>
-                        </section>
-                    </section>
-                `,
-            );
-
-            const countrySelect = detailContent.querySelector(
-                "[data-country-select]",
-            );
-
-            if (countrySelect instanceof HTMLSelectElement) {
-                const matchedOption = Array.from(countrySelect.options).find(
-                    (option) => option.textContent?.trim() === currentCountry,
-                );
-
-                if (matchedOption) {
-                    countrySelect.value = matchedOption.value;
-                }
-
-                countrySelect.addEventListener("change", () => {
-                    const selectedCountry =
-                        countrySelect.selectedOptions[0]?.textContent?.trim() ||
-                        currentCountry;
-
-                    if (countryItem) {
-                        countryItem.value = selectedCountry;
-                    }
-                });
-            }
-
+            bindRouteOnce(routeRoot, "boundCountryRoute", bindCountryRoute);
+            syncCountryRoute(routeRoot);
             return true;
         }
 
         if (activeDetailRoute === "language-edit") {
             detailTitle.textContent = "언어";
-
-            detailContent.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <section class="detail-route detail-route--language" data-detail-route>
-                        <section class="language-editor">
-                            <p class="language-editor__summary">
-                                사용자 환경을 맞춤 설정할 때 사용되는 언어를 관리합니다.
-                            </p>
-                            <button
-                                type="button"
-                                class="language-editor__item"
-                                data-modal-type="language-select"
-                            >
-                                <span class="language-editor__item-copy">
-                                    <span class="language-editor__item-title">
-                                        앱 및 게시 언어
-                                    </span>
-                                    <span class="language-editor__item-value">
-                                        ${getCombinedLanguageLabel()}
-                                    </span>
-                                </span>
-                                <span class="language-editor__item-arrow" aria-hidden="true">
-                                    ${buildIcon(icons.arrow)}
-                                </span>
-                            </button>
-                        </section>
-                    </section>
-                `,
-            );
-
+            syncLanguageRoute(routeRoot);
             return true;
         }
-
-        detailContent.insertAdjacentHTML(
-            "beforeend",
-            `
-                <section class="detail-route detail-route--info" data-detail-route>
-                    <div class="account-info-list">
-                        ${accountInfoItems
-                            .map(
-                                (item) => `
-                                    <button type="button" class="account-info-item" data-account-info-id="${item.id}">
-                                        <span class="account-info-item__content">
-                                            <span class="account-info-item__label">${item.label}</span>
-                                            <span class="account-info-item__value">${item.value || "&nbsp;"}</span>
-                                            ${item.description ? `<span class="account-info-item__description">${item.description}</span>` : ""}
-                                        </span>
-                                        ${item.showArrow === false ? "" : `<span class="account-info-item__arrow">${buildIcon(icons.arrow)}</span>`}
-                                    </button>
-                                `,
-                            )
-                            .join("")}
-                    </div>
-                </section>
-            `,
-        );
 
         return true;
     }
@@ -2969,11 +1559,8 @@ document.addEventListener("DOMContentLoaded", () => {
      */
     function renderDetail() {
         const section = getActiveSectionData();
-        const existingRoute = detailContent.querySelector(
-            "[data-detail-route]",
-        );
-        existingRoute?.remove();
         resetDetailHeaderAction();
+        hideDetailRouteViews();
         detailBackButton.hidden = true;
         detailSummary.hidden = false;
         detailList.hidden = false;
