@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>견적 요청 목록</title>
+        <link
+            rel="stylesheet"
+            href="../../static/css/estimation/estimation-list.css"
+        />
+    </head>
+    <body>
+        <main class="activity-page">
+            <div class="activity-layout">
+                <div class="activity-shell">
+                    <header class="activity-header">
+                        <div class="activity-header__inner">
+                            <h1 class="activity-header__title">견적 요청 목록</h1>
+                        </div>
+                        <nav class="inquiry-tabnav" aria-label="견적 요청 탭" role="navigation">
+                            <div class="inquiry-tabnav__inner">
+                                <div role="tablist" class="inquiry-tabnav__list" data-testid="ScrollSnap-List">
+                                    <div role="presentation" class="inquiry-tabnav__item">
+                                        <button type="button" role="tab" aria-selected="false" class="inquiry-tab" data-inquiry-tab="summary">
+                                            <span class="inquiry-tab__label">요약</span>
+                                            <span class="inquiry-tab__indicator"></span>
+                                        </button>
+                                    </div>
+                                    <div role="presentation" class="inquiry-tabnav__item">
+                                        <button type="button" role="tab" aria-selected="false" class="inquiry-tab" data-inquiry-tab="partners">
+                                            <span class="inquiry-tab__label">거래처 등록 목록</span>
+                                            <span class="inquiry-tab__indicator"></span>
+                                        </button>
+                                    </div>
+                                    <div role="presentation" class="inquiry-tabnav__item">
+                                        <button type="button" role="tab" aria-selected="false" class="inquiry-tab" data-inquiry-tab="activity">
+                                            <span class="inquiry-tab__label">거래처 활동 목록</span>
+                                            <span class="inquiry-tab__indicator"></span>
+                                        </button>
+                                    </div>
+                                    <div role="presentation" class="inquiry-tabnav__item">
+                                        <button type="button" role="tab" aria-selected="true" class="inquiry-tab inquiry-tab--active" data-inquiry-tab="quotes">
+                                            <span class="inquiry-tab__label">견적 요청 목록</span>
+                                            <span class="inquiry-tab__indicator"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </nav>
+                    </header>
+
+                    <section class="inquiry-panels">
+                        <section class="inquiry-panel inquiry-panel--blank" data-inquiry-panel="summary" hidden></section>
+                        <section class="inquiry-panel inquiry-panel--blank" data-inquiry-panel="partners" hidden></section>
+                        <section class="inquiry-panel inquiry-panel--blank" data-inquiry-panel="activity" hidden></section>
+                        <section class="inquiry-panel inquiry-panel--quotes" data-inquiry-panel="quotes">
+                            <section class="activity-toolbar" aria-label="견적 요청 필터">
+                                <div class="activity-toolbar__left">
+                                    <div class="activity-filter-dropdown">
+                                        <button type="button" class="activity-filter-button" data-activity-filter-trigger aria-haspopup="menu" aria-expanded="false">
+                                            <span data-activity-filter-label>전체</span>
+                                            <span class="activity-toolbar__caret" aria-hidden="true"></span>
+                                        </button>
+                                        <div class="activity-filter-menu" role="menu" data-activity-filter-menu hidden>
+                                            <button type="button" class="activity-filter-menu__item activity-filter-menu__item--selected" role="menuitemradio" aria-checked="true" data-activity-filter-item="all">
+                                                <span class="activity-filter-menu__check" aria-hidden="true">✓</span>
+                                                <span class="activity-filter-menu__label">전체</span>
+                                            </button>
+                                            <button type="button" class="activity-filter-menu__item" role="menuitemradio" aria-checked="false" data-activity-filter-item="open">
+                                                <span class="activity-filter-menu__check" aria-hidden="true">✓</span>
+                                                <span class="activity-filter-menu__label">모집중</span>
+                                            </button>
+                                            <button type="button" class="activity-filter-menu__item" role="menuitemradio" aria-checked="false" data-activity-filter-item="review">
+                                                <span class="activity-filter-menu__check" aria-hidden="true">✓</span>
+                                                <span class="activity-filter-menu__label">검토중</span>
+                                            </button>
+                                            <button type="button" class="activity-filter-menu__item" role="menuitemradio" aria-checked="false" data-activity-filter-item="closed">
+                                                <span class="activity-filter-menu__check" aria-hidden="true">✓</span>
+                                                <span class="activity-filter-menu__label">마감</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="activity-toolbar__right">
+                                    <div class="activity-date-range" aria-label="조회 기간">
+                                        <input type="date" class="activity-date-input" value="2026-02-15" data-activity-date-start />
+                                        <span class="activity-date-range__divider" aria-hidden="true">-</span>
+                                        <input type="date" class="activity-date-input" value="2026-03-15" data-activity-date-end />
+                                    </div>
+                                    <div class="activity-toolbar__chips" aria-label="빠른 기간">
+                                        <button type="button" class="period-chip period-chip--active" data-period-chip="7D">7D</button>
+                                        <button type="button" class="period-chip" data-period-chip="2W">2W</button>
+                                        <button type="button" class="period-chip" data-period-chip="4W">4W</button>
+                                        <button type="button" class="period-chip" data-period-chip="3M">3M</button>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <div class="estimation-list" data-estimation-list>
+                                <article class="postCard estimation-preview-card" data-estimation-card data-filter-state="open" data-estimation-detail-target="detail-301">
+                                    <div class="postAvatar postAvatar--image">
+                                        <img src="../../static/images/main/ad.png" alt="요청 기업 프로필" class="postAvatarImage" />
+                                    </div>
+                                    <div class="postBody">
+                                        <header class="postHeader">
+                                            <div class="postIdentity">
+                                                <strong class="postName">Global Gates</strong>
+                                                <span class="postHandle">견적 요청</span>
+                                                <span class="postTime">2026.03.15</span>
+                                            </div>
+                                            <span class="estimation-status estimation-status--open">모집중</span>
+                                        </header>
+                                        <div class="estimation-preview-card__link">
+                                            <div class="estimation-preview-card__person">
+                                                <img src="../../static/images/main/ad.png" alt="" class="estimation-preview-card__avatar" />
+                                                <span class="estimation-preview-card__email">trade@gates.com</span>
+                                            </div>
+                                            <span class="estimation-preview-card__icon" aria-hidden="true">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="currentColor" viewBox="0 0 16 16">
+                                                    <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z" />
+                                                    <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4 4 0 0 1-.82 1H12a3 3 0 1 0 0-6z" />
+                                                </svg>
+                                            </span>
+                                            <div class="estimation-preview-card__person">
+                                                <img src="../../static/images/main/lown1.jpg" alt="" class="estimation-preview-card__avatar" />
+                                                <span class="estimation-preview-card__email">partner@gates.com</span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="estimation-preview-card__body" data-estimation-detail-target="detail-301" aria-label="프리미엄 완구 수출 견적 요청 상세 보기">
+                                            <div class="estimation-preview-card__meta">
+                                                <span class="estimation-chip estimation-chip--sky">완구</span>
+                                                <span class="estimation-chip">수출</span>
+                                                <span class="estimation-chip">FOB 부산</span>
+                                            </div>
+                                            <strong class="estimation-preview-card__title">프리미엄 완구 3종 수출 견적 요청</strong>
+                                            <p class="postText">미국 동부 유통 채널 입점을 위한 완구 3종 견적이 필요합니다. MOQ, 납기, 패키지 커스터마이징 가능 여부를 함께 확인하고 싶습니다.</p>
+                                        </button>
+                                    </div>
+                                </article>
+
+                                <article class="postCard estimation-preview-card" data-estimation-card data-filter-state="review" data-estimation-detail-target="detail-302">
+                                    <div class="postAvatar postAvatar--image">
+                                        <img src="../../static/images/main/lown1.jpg" alt="요청 기업 프로필" class="postAvatarImage" />
+                                    </div>
+                                    <div class="postBody">
+                                        <header class="postHeader">
+                                            <div class="postIdentity">
+                                                <strong class="postName">Partner Connect</strong>
+                                                <span class="postHandle">견적 요청</span>
+                                                <span class="postTime">2026.03.13</span>
+                                            </div>
+                                            <span class="estimation-status estimation-status--review">검토중</span>
+                                        </header>
+                                        <div class="estimation-preview-card__link">
+                                            <div class="estimation-preview-card__person">
+                                                <img src="../../static/images/main/lown1.jpg" alt="" class="estimation-preview-card__avatar" />
+                                                <span class="estimation-preview-card__email">buyer@partner.com</span>
+                                            </div>
+                                            <span class="estimation-preview-card__icon" aria-hidden="true">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="currentColor" viewBox="0 0 16 16">
+                                                    <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z" />
+                                                    <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4 4 0 0 1-.82 1H12a3 3 0 1 0 0-6z" />
+                                                </svg>
+                                            </span>
+                                            <div class="estimation-preview-card__person">
+                                                <img src="../../static/images/main/ad.png" alt="" class="estimation-preview-card__avatar" />
+                                                <span class="estimation-preview-card__email">ops@gates.com</span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="estimation-preview-card__body" data-estimation-detail-target="detail-302" aria-label="산업용 필름 공동 생산 견적 요청 상세 보기">
+                                            <div class="estimation-preview-card__meta">
+                                                <span class="estimation-chip estimation-chip--mint">산업재</span>
+                                                <span class="estimation-chip">공동개발</span>
+                                                <span class="estimation-chip">샘플검토</span>
+                                            </div>
+                                            <strong class="estimation-preview-card__title">산업용 필름 공동 생산 견적 요청</strong>
+                                            <p class="postText">내열성 필름 샘플 리뷰가 진행 중입니다. 단가표와 최소 생산 배치, 인증 대응 범위를 다시 정리해 주셔야 합니다.</p>
+                                        </button>
+                                    </div>
+                                </article>
+
+                                <article class="postCard estimation-preview-card" data-estimation-card data-filter-state="closed" data-estimation-detail-target="detail-303">
+                                    <div class="postAvatar postAvatar--image">
+                                        <img src="../../static/images/main/ad.png" alt="요청 기업 프로필" class="postAvatarImage" />
+                                    </div>
+                                    <div class="postBody">
+                                        <header class="postHeader">
+                                            <div class="postIdentity">
+                                                <strong class="postName">TradeHub Korea</strong>
+                                                <span class="postHandle">견적 요청</span>
+                                                <span class="postTime">2026.03.10</span>
+                                            </div>
+                                            <span class="estimation-status estimation-status--closed">마감</span>
+                                        </header>
+                                        <div class="estimation-preview-card__link">
+                                            <div class="estimation-preview-card__person">
+                                                <img src="../../static/images/main/ad.png" alt="" class="estimation-preview-card__avatar" />
+                                                <span class="estimation-preview-card__email">procurement@tradehub.kr</span>
+                                            </div>
+                                            <span class="estimation-preview-card__icon" aria-hidden="true">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="currentColor" viewBox="0 0 16 16">
+                                                    <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z" />
+                                                    <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4 4 0 0 1-.82 1H12a3 3 0 1 0 0-6z" />
+                                                </svg>
+                                            </span>
+                                            <div class="estimation-preview-card__person">
+                                                <img src="../../static/images/main/lown1.jpg" alt="" class="estimation-preview-card__avatar" />
+                                                <span class="estimation-preview-card__email">supply@connect.kr</span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="estimation-preview-card__body" data-estimation-detail-target="detail-303" aria-label="친환경 패키지 공급 견적 요청 상세 보기">
+                                            <div class="estimation-preview-card__meta">
+                                                <span class="estimation-chip estimation-chip--sand">패키지</span>
+                                                <span class="estimation-chip">친환경</span>
+                                                <span class="estimation-chip">국내조달</span>
+                                            </div>
+                                            <strong class="estimation-preview-card__title">친환경 패키지 공급 견적 요청</strong>
+                                            <p class="postText">종이 완충재와 리사이클 박스 조합으로 패키지 단가를 비교한 요청입니다. 내부 검토가 끝나 마감 상태로 전환되었습니다.</p>
+                                        </button>
+                                    </div>
+                                </article>
+                            </div>
+                        </section>
+                    </section>
+                </div>
+            </div>
+        </main>
+        <div class="estimation-detail-modal" data-estimation-detail-modal hidden>
+            <div class="estimation-detail-modal__backdrop" data-estimation-detail-close></div>
+            <section
+                class="estimation-detail-modal__dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="estimationDetailTitle"
+            >
+                <header class="estimation-detail-modal__header">
+                    <div>
+                        <p class="estimation-detail-modal__eyebrow">견적 요청 상세</p>
+                        <h2 class="estimation-detail-modal__title" id="estimationDetailTitle">
+                            요청 상세
+                        </h2>
+                    </div>
+                    <button
+                        type="button"
+                        class="estimation-detail-modal__close"
+                        data-estimation-detail-close
+                        aria-label="상세 닫기"
+                    >
+                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                            <g>
+                                <path d="M10.59 12 4.54 5.96l1.42-1.42L12 10.59l6.04-6.05 1.42 1.42L13.41 12l6.05 6.04-1.42 1.42L12 13.41l-6.04 6.05-1.42-1.42L10.59 12z"></path>
+                            </g>
+                        </svg>
+                    </button>
+                </header>
+                <div class="estimation-detail-modal__body">
+                    <article class="estimation-detail-panel" data-estimation-detail-panel="detail-301" hidden>
+                        <div class="estimation-detail-panel__hero">
+                            <span class="estimation-status estimation-status--open">모집중</span>
+                            <h3 class="estimation-detail-panel__title">프리미엄 완구 3종 수출 견적 요청</h3>
+                            <p class="estimation-detail-panel__description">
+                                미국 동부 유통 채널 입점을 위한 완구 3종 견적이 필요합니다. MOQ, 납기, 패키지 커스터마이징 가능 여부를 함께 확인하고 싶습니다.
+                            </p>
+                        </div>
+                        <div class="estimation-detail-panel__link">
+                            <div class="estimation-preview-card__person">
+                                <img src="../../static/images/main/ad.png" alt="" class="estimation-preview-card__avatar" />
+                                <span class="estimation-preview-card__email">trade@gates.com</span>
+                            </div>
+                            <span class="estimation-preview-card__icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z" />
+                                    <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4 4 0 0 1-.82 1H12a3 3 0 1 0 0-6z" />
+                                </svg>
+                            </span>
+                            <div class="estimation-preview-card__person">
+                                <img src="../../static/images/main/lown1.jpg" alt="" class="estimation-preview-card__avatar" />
+                                <span class="estimation-preview-card__email">partner@gates.com</span>
+                            </div>
+                        </div>
+                        <dl class="estimation-detail-panel__facts">
+                            <div><dt>희망 수량</dt><dd>월 12,000개</dd></div>
+                            <div><dt>희망 납기</dt><dd>4월 2주차</dd></div>
+                            <div><dt>인코텀즈</dt><dd>FOB 부산</dd></div>
+                            <div><dt>요청 카테고리</dt><dd>완구 / 수출</dd></div>
+                        </dl>
+                        <section class="estimation-detail-panel__section">
+                            <h4>요청 조건</h4>
+                            <ul class="estimation-detail-panel__list">
+                                <li>OEM 패키지 커스터마이징 가능 여부 포함</li>
+                                <li>KC 및 ASTM 대응 가능 여부 명시</li>
+                                <li>샘플 리드타임과 양산 리드타임 분리 표기</li>
+                            </ul>
+                        </section>
+                    </article>
+                    <article class="estimation-detail-panel" data-estimation-detail-panel="detail-302" hidden>
+                        <div class="estimation-detail-panel__hero">
+                            <span class="estimation-status estimation-status--review">검토중</span>
+                            <h3 class="estimation-detail-panel__title">산업용 필름 공동 생산 견적 요청</h3>
+                            <p class="estimation-detail-panel__description">
+                                내열성 필름 샘플 리뷰가 진행 중입니다. 단가표와 최소 생산 배치, 인증 대응 범위를 다시 정리해 주셔야 합니다.
+                            </p>
+                        </div>
+                        <div class="estimation-detail-panel__link">
+                            <div class="estimation-preview-card__person">
+                                <img src="../../static/images/main/lown1.jpg" alt="" class="estimation-preview-card__avatar" />
+                                <span class="estimation-preview-card__email">buyer@partner.com</span>
+                            </div>
+                            <span class="estimation-preview-card__icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z" />
+                                    <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4 4 0 0 1-.82 1H12a3 3 0 1 0 0-6z" />
+                                </svg>
+                            </span>
+                            <div class="estimation-preview-card__person">
+                                <img src="../../static/images/main/ad.png" alt="" class="estimation-preview-card__avatar" />
+                                <span class="estimation-preview-card__email">ops@gates.com</span>
+                            </div>
+                        </div>
+                        <dl class="estimation-detail-panel__facts">
+                            <div><dt>샘플 단계</dt><dd>2차 검토</dd></div>
+                            <div><dt>요청 국가</dt><dd>독일</dd></div>
+                            <div><dt>후속 미팅</dt><dd>03.18</dd></div>
+                            <div><dt>요청 분류</dt><dd>산업재 / 공동개발</dd></div>
+                        </dl>
+                        <section class="estimation-detail-panel__section">
+                            <h4>검토 포인트</h4>
+                            <ul class="estimation-detail-panel__list">
+                                <li>UL94 관련 인증 범위 재확인</li>
+                                <li>최소 생산 배치 기준 단가 재산정</li>
+                                <li>샘플 승인 후 양산 전환 일정 공유</li>
+                            </ul>
+                        </section>
+                    </article>
+                    <article class="estimation-detail-panel" data-estimation-detail-panel="detail-303" hidden>
+                        <div class="estimation-detail-panel__hero">
+                            <span class="estimation-status estimation-status--closed">마감</span>
+                            <h3 class="estimation-detail-panel__title">친환경 패키지 공급 견적 요청</h3>
+                            <p class="estimation-detail-panel__description">
+                                종이 완충재와 리사이클 박스 조합으로 패키지 단가를 비교한 요청입니다. 내부 검토가 끝나 마감 상태로 전환되었습니다.
+                            </p>
+                        </div>
+                        <div class="estimation-detail-panel__link">
+                            <div class="estimation-preview-card__person">
+                                <img src="../../static/images/main/ad.png" alt="" class="estimation-preview-card__avatar" />
+                                <span class="estimation-preview-card__email">procurement@tradehub.kr</span>
+                            </div>
+                            <span class="estimation-preview-card__icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z" />
+                                    <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4 4 0 0 1-.82 1H12a3 3 0 1 0 0-6z" />
+                                </svg>
+                            </span>
+                            <div class="estimation-preview-card__person">
+                                <img src="../../static/images/main/lown1.jpg" alt="" class="estimation-preview-card__avatar" />
+                                <span class="estimation-preview-card__email">supply@connect.kr</span>
+                            </div>
+                        </div>
+                        <dl class="estimation-detail-panel__facts">
+                            <div><dt>최종 수량</dt><dd>50,000세트</dd></div>
+                            <div><dt>선정 방식</dt><dd>가격+납기</dd></div>
+                            <div><dt>종료일</dt><dd>03.14</dd></div>
+                            <div><dt>소재</dt><dd>리사이클 종이 / 완충재</dd></div>
+                        </dl>
+                        <section class="estimation-detail-panel__section">
+                            <h4>마감 결과</h4>
+                            <ul class="estimation-detail-panel__list">
+                                <li>국내 조달 기준 최종 비교 완료</li>
+                                <li>리드타임과 단가를 종합해 우선협상대상 선정</li>
+                                <li>후속 발주는 공급 일정 확정 후 진행 예정</li>
+                            </ul>
+                        </section>
+                    </article>
+                </div>
+            </section>
+        </div>
+        <script src="../../static/js/estimation/estimaition-list/event.js"></script>
+    </body>
+</html>

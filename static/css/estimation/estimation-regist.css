@@ -1,0 +1,110 @@
+@import url("../main/main.css");
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+    background: #ffffff;
+}
+
+#createPostButton[hidden] {
+    display: none;
+}
+
+.composerRequestLabel {
+    cursor: default;
+    pointer-events: none;
+}
+
+#postComposerForm {
+    display: block;
+}
+
+#postComposerForm > #composerAvatar {
+    display: none;
+}
+
+#postComposerForm .composerBody {
+    width: 100%;
+}
+
+#postComposerForm .composerAudience {
+    margin-bottom: 16px;
+}
+
+#postComposerForm .audienceButton {
+    display: none;
+}
+
+#postComposerForm .composerAudienceRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    width: 100%;
+}
+
+#postComposerForm .composerAudienceTagDock {
+    display: flex;
+    margin-bottom: 12px;
+}
+
+#postComposerForm .composerTagInput[hidden] {
+    display: none;
+}
+
+#postComposerForm .composerAvatar--inline {
+    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    margin-right: 12px;
+}
+
+#postComposerForm .composerProfileLink {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 140px;
+    width: 100%;
+    margin-right: 0;
+}
+
+#postComposerForm .composerProfileLinkPerson {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+#postComposerForm .composerProfileLinkAvatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 9999px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #eff3f4;
+}
+
+#postComposerForm .composerProfileLinkEmail {
+    color: #536471;
+    font-size: 13px;
+    line-height: 16px;
+    white-space: nowrap;
+}
+
+#postComposerForm .composerProfileLinkIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    margin: 0 2px;
+    border-radius: 0;
+    background: transparent;
+    color: #1d9bf0;
+    flex-shrink: 0;
+}
+
+#postComposerForm .composerProfileLinkIcon svg {
+    fill: currentColor;
+}
