@@ -146,6 +146,15 @@ if (trendReportMenu) {
 
 // 7. Post-Card 인터랙션 (Like / Bookmark / 이미지 프리뷰)
 (function () {
+    // Toast 알림
+    function showToast(message, extraClass) {
+        var toast = document.createElement("div");
+        toast.className = "toast" + (extraClass ? " " + extraClass : "");
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(function () { toast.remove(); }, 2500);
+    }
+
     // Like 토글
     function handleLike(btn) {
         var isLiked = btn.classList.contains("liked");
@@ -159,6 +168,7 @@ if (trendReportMenu) {
             var cur = parseInt(countEl.textContent.replace(/[^0-9]/g, ""), 10) || 0;
             countEl.textContent = isLiked ? cur - 1 : cur + 1;
         }
+        showToast(isLiked ? "좋아요를 취소했습니다." : "좋아요를 눌렀습니다.", "toast--like");
     }
 
     // Bookmark 토글
@@ -169,6 +179,7 @@ if (trendReportMenu) {
         if (path) {
             path.setAttribute("d", isBookmarked ? path.getAttribute("data-path-inactive") : path.getAttribute("data-path-active"));
         }
+        showToast(isBookmarked ? "북마크가 해제되었습니다." : "북마크에 저장되었습니다.");
     }
 
     // 이미지 프리뷰
