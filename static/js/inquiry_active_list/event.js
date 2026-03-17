@@ -1,5 +1,12 @@
-// inquiry_active_list 화면에서 사용하는 모든 상호작용을 한 곳에서 초기화한다.
+// ===== inquiry_active_list 이벤트 스크립트 =====
+// 이 파일은 inquiry_active_list 화면에서 사용하는 모든 상호작용을 한 곳에서 초기화한다.
+// 탭 전환, 필터 드롭다운, 게시물 카드 액션(좋아요/북마크/공유/더보기/답글),
+// 답글 모달 및 서브뷰(위치/태그/미디어/이모지/임시저장/판매글)를 포함한다.
 window.onload = () => {
+
+    // ===== DOM 참조 섹션 =====
+
+    // --- 탭 / 패널 / 필터 관련 ---
     // 상단 탭 / 패널 / 필터 / 기간 버튼처럼 처음부터 HTML에 존재하는 고정 UI 참조들이다.
     const tabButtons = Array.from(
         document.querySelectorAll("[data-inquiry-tab]"),
@@ -19,7 +26,9 @@ window.onload = () => {
         document.querySelectorAll("[data-activity-filter-item]"),
     );
 
+    // --- 답글 모달 요소 참조 ---
     // 답글 모달은 HTML의 [data-reply-modal] 골격을 재사용하고, 열릴 때마다 내용만 채운다.
+    // 모달은 body에 동적 생성되지 않고, HTML에 이미 존재하며 hidden 속성으로 표시/숨김을 전환한다.
     const replyModalOverlay = document.querySelector("[data-reply-modal]");
     const replyModal = replyModalOverlay?.querySelector(".tweet-modal");
     const replyCloseButton = replyModalOverlay?.querySelector(
@@ -63,6 +72,7 @@ window.onload = () => {
     // 첨부파일 관련
     const replyAttachmentPreview = replyModalOverlay?.querySelector("[data-attachment-preview]");
     const replyAttachmentMedia = replyModalOverlay?.querySelector("[data-attachment-media]");
+    // --- 답글 모달 서브뷰 요소 참조 ---
     // 작성 화면 래퍼
     const composeView = replyModalOverlay?.querySelector(".tweet-modal__compose-view");
     // 위치 태그 버튼 및 서브뷰
@@ -86,15 +96,101 @@ window.onload = () => {
     const productSelectComplete = replyProductView?.querySelector("[data-product-select-complete]");
     const productSelectEmpty = replyProductView?.querySelector("[data-product-empty]");
 
-    // 공유 드롭다운은 HTML의 #layers 루트에 동적으로 추가된다.
+    // 답글 대상 게시물의 컨텍스트 버튼
+    const replyContextButton = replyModalOverlay?.querySelector(".tweet-modal__context-button");
+
+    // 사용자 태그 서브뷰
+    const replyUserTagTrigger = replyModalOverlay?.querySelector("[data-user-tag-trigger]");
+    const replyUserTagLabel = replyModalOverlay?.querySelector("[data-user-tag-label]");
+    const replyTagView = replyModalOverlay?.querySelector(".tweet-modal__tag-view");
+    const replyTagCloseButton = replyModalOverlay?.querySelector("[data-testid='tag-back']");
+    const replyTagCompleteButton = replyModalOverlay?.querySelector("[data-tag-complete]");
+    const replyTagSearchForm = replyModalOverlay?.querySelector("[data-tag-search-form]");
+    const replyTagSearchInput = replyModalOverlay?.querySelector("[data-tag-search]");
+    const replyTagChipList = replyModalOverlay?.querySelector("[data-tag-chip-list]");
+    const replyTagResults = replyModalOverlay?.querySelector("[data-tag-results]");
+    // 미디어 설명(ALT) 편집 서브뷰
+    const replyMediaAltTrigger = replyModalOverlay?.querySelector("[data-media-alt-trigger]");
+    const replyMediaAltLabel = replyModalOverlay?.querySelector("[data-media-alt-label]");
+    const replyMediaView = replyModalOverlay?.querySelector(".tweet-modal__media-view");
+    const replyMediaBackButton = replyModalOverlay?.querySelector("[data-testid='media-back']");
+    const replyMediaPrevButton = replyModalOverlay?.querySelector("[data-media-prev]");
+    const replyMediaNextButton = replyModalOverlay?.querySelector("[data-media-next]");
+    const replyMediaSaveButton = replyModalOverlay?.querySelector("[data-media-save]");
+    const replyMediaTitle = replyModalOverlay?.querySelector("[data-media-title]");
+    const replyMediaPreviewImages = replyModalOverlay?.querySelectorAll("[data-media-preview-image]") ?? [];
+    const replyMediaAltInput = replyModalOverlay?.querySelector("[data-media-alt-input]");
+    const replyMediaAltCount = replyModalOverlay?.querySelector("[data-media-alt-count]");
+
+    // --- 답글 모달 임시저장(Draft) 서브뷰 요소 참조 ---
+    // 답글 모달 내부 초안 서브뷰 (.tweet-modal__draft-view)
+    const draftView = replyModalOverlay?.querySelector(".tweet-modal__draft-view");
+    // 임시저장 패널 열기 버튼
+    const draftButton = replyModalOverlay?.querySelector(".tweet-modal__draft");
+    // 임시저장 패널 뒤로가기 버튼
+    const draftBackButton = draftView?.querySelector(".draft-panel__back");
+    // 임시저장 패널 수정/완료 토글 버튼
+    const draftActionButton = draftView?.querySelector(".draft-panel__action");
+    // 임시저장 목록 컨테이너
+    const draftList = draftView?.querySelector(".draft-panel__list");
+    // 임시저장 비어있음 안내 영역
+    const draftEmpty = draftView?.querySelector(".draft-panel__empty");
+    // 임시저장 비어있음 제목
+    const draftEmptyTitle = draftView?.querySelector(
+        ".draft-panel__empty-title",
+    );
+    // 임시저장 비어있음 설명
+    const draftEmptyBody = draftView?.querySelector(".draft-panel__empty-body");
+    // 임시저장 편집 모드 하단 영역
+    const draftFooter = draftView?.querySelector(".draft-panel__footer");
+    // 임시저장 전체 선택/해제 버튼
+    const draftSelectAllButton = draftView?.querySelector(
+        ".draft-panel__select-all",
+    );
+    // 임시저장 선택 항목 삭제 버튼
+    const draftDeleteButton = draftView?.querySelector(
+        ".draft-panel__footer-delete",
+    );
+    // 임시저장 삭제 확인 오버레이
+    const draftConfirmOverlay = draftView?.querySelector(
+        ".draft-panel__confirm-overlay",
+    );
+    // 임시저장 삭제 확인 배경
+    const draftConfirmBackdrop = draftView?.querySelector(
+        ".draft-panel__confirm-backdrop",
+    );
+    // 임시저장 삭제 확인 제목
+    const draftConfirmTitle = draftView?.querySelector(
+        ".draft-panel__confirm-title",
+    );
+    // 임시저장 삭제 확인 설명
+    const draftConfirmDesc = draftView?.querySelector(
+        ".draft-panel__confirm-desc",
+    );
+    // 임시저장 삭제 확인의 삭제 버튼
+    const draftConfirmDeleteButton = draftView?.querySelector(
+        ".draft-panel__confirm-primary",
+    );
+    // 임시저장 삭제 확인의 취소 버튼
+    const draftConfirmCancelButton = draftView?.querySelector(
+        ".draft-panel__confirm-secondary",
+    );
+
+    // --- 동적 레이어 마운트 지점 ---
+    // 공유 드롭다운과 더보기 드롭다운은 HTML의 #layers 루트에 동적으로 추가된다.
+    // appendChild로 추가하고, 닫을 때 remove()로 DOM에서 제거한다.
     const layersRoot = document.getElementById("layers");
 
+    // ===== 상태 변수 섹션 =====
+
+    // --- 상수 ---
     // 탭 미리보기 애니메이션 시간과 게시물 본문 축약 기준 길이다.
     const PREVIEW_DURATION_MS = 280;
     const MAX_POST_TEXT_LENGTH = 140;
     // 답글 최대 글자수 (main 게시하기와 동일)
     const REPLY_MAX_LENGTH = 500;
 
+    // --- 활성 UI 추적 상태 ---
     // 현재 열려 있는 UI와 마지막으로 눌린 트리거를 추적해서 중복 오픈과 복귀 포커스를 관리한다.
     let activeReplyTrigger = null;
     let activeShareDropdown = null;
@@ -109,7 +205,7 @@ window.onload = () => {
     let activeNotificationToast = null;
     // 사용자별 팔로우 상태를 저장하는 Map
     const followState = new Map();
-    // 답글 서식/선택/이모지/첨부 상태
+    // --- 답글 에디터 서식/선택/이모지/첨부 상태 ---
     let pendingReplyFormats = new Set();
     let savedReplySelection = null;
     let savedReplySelectionOffsets = null;
@@ -124,8 +220,16 @@ window.onload = () => {
     let pendingLocation = null;
     const cachedLocationNames = ["대한민국 서초구", "대한민국 강남구", "대한민국 송파구", "대한민국 광진구", "대한민국 동작구", "대한민국 중구"];
     const maxReplyImages = 4;
+    const maxReplyMediaAltLength = 1000;
     let activeEmojiCategory = "recent";
-    // 신고 사유 목록 (Notification과 동일)
+    // --- 태그 / 미디어 ALT 편집 상태 ---
+    let selectedTaggedUsers = [];
+    let pendingTaggedUsers = [];
+    let replyMediaEdits = [];
+    let pendingReplyMediaEdits = [];
+    let activeReplyMediaIndex = 0;
+    let currentTagResults = [];
+    // --- 신고 사유 목록 (차단/신고 모달에서 사용) ---
     const reportReasons = [
         "다른 회사 제품 도용 신고",
         "실제 존재하지 않는 제품 등록 신고",
@@ -135,7 +239,7 @@ window.onload = () => {
         "반복적인 동일 게시물 신고",
     ];
 
-    // ===== 공통 유틸 =====
+    // ===== 공통 유틸리티 함수 섹션 =====
     // DOM 텍스트를 정리해서 비교/표시에 안전한 문자열로 만든다.
     const getTextContent = (element) =>
         element?.textContent?.replace(/\s+/g, " ").trim() ?? "";
@@ -197,7 +301,7 @@ window.onload = () => {
         }, PREVIEW_DURATION_MS);
     };
 
-    // ===== 열린 UI 닫기 헬퍼 =====
+    // ===== 열린 UI 닫기 헬퍼 섹션 =====
     // 필터 드롭다운을 닫고 트리거의 aria 상태를 원복한다.
     const closeFilterMenu = () => {
         if (!filterTrigger || !filterMenu) {
@@ -217,7 +321,8 @@ window.onload = () => {
         activePostMoreButton = null;
     };
 
-    // 더보기 동적 드롭다운(#layers)을 닫는다 (Notification과 동일)
+    // 더보기 동적 드롭다운(#layers)을 닫는다.
+    // 드롭다운은 #layers에 동적으로 추가된 것이므로 remove()로 DOM에서 완전히 제거한다.
     const closeMoreDropdown = () => {
         if (!activeMoreDropdown) return;
         activeMoreDropdown.remove();
@@ -228,7 +333,8 @@ window.onload = () => {
         }
     };
 
-    // 차단/신고 모달을 닫는다
+    // 차단/신고 모달을 닫는다.
+    // 이 모달은 document.body에 동적으로 추가된 것이므로 remove()로 DOM에서 완전히 제거한다.
     const closeNotificationModal = () => {
         if (!activeNotificationModal) return;
         activeNotificationModal.remove();
@@ -236,7 +342,8 @@ window.onload = () => {
         document.body.classList.remove("modal-open");
     };
 
-    // 토스트를 body 하단에 표시한다 (Notification과 동일)
+    // ===== 토스트 표시 함수 섹션 =====
+    // 토스트 div를 document.body에 동적으로 추가하고 3초 후 자동으로 remove()한다.
     const showNotificationToast = (message) => {
         activeNotificationToast?.remove();
         const toast = document.createElement("div");
@@ -252,7 +359,9 @@ window.onload = () => {
         }, 3000);
     };
 
-    // 더보기 드롭다운 메뉴 항목(팔로우/차단/신고)을 생성한다 (Notification과 동일)
+    // ===== 더보기 드롭다운 함수 섹션 =====
+    // 더보기 드롭다운은 #layers 요소에 동적으로 생성(appendChild)되고, 닫을 때 remove()로 제거된다.
+    // 팔로우/차단/신고 메뉴 항목을 포함한다.
     const getMoreDropdownItems = (button) => {
         const postCard = getPostCard(button);
         const handle = getTextContent(postCard?.querySelector(".postHandle")) || "@user";
@@ -278,7 +387,9 @@ window.onload = () => {
         ];
     };
 
-    // 차단 확인 모달을 열기 (Notification과 동일)
+    // ===== 차단/신고 모달 함수 섹션 =====
+    // 차단/신고 모달(.notification-dialog)은 document.body에 동적으로 생성(appendChild)되고,
+    // 닫을 때 closeNotificationModal()에서 remove()로 DOM에서 완전히 제거된다.
     const openBlockModal = (button) => {
         const postCard = getPostCard(button);
         const handle = getTextContent(postCard?.querySelector(".postHandle")) || "@user";
@@ -339,13 +450,10 @@ window.onload = () => {
         const rect = button.getBoundingClientRect();
         const top = rect.bottom + window.scrollY + 8;
         const items = getMoreDropdownItems(button);
-        const menuWidth = 280;
-        let left = rect.right + window.scrollX - menuWidth;
-        if (left < 16) left = 16;
-        if (left + menuWidth > window.innerWidth - 16) left = window.innerWidth - 16 - menuWidth;
+        const right = Math.max(16, window.innerWidth - rect.right);
         const lc = document.createElement("div");
         lc.className = "layers-dropdown-container";
-        lc.innerHTML = `<div class="layers-overlay"></div><div class="layers-dropdown-inner"><div role="menu" class="dropdown-menu" style="top: ${top}px; left: ${left}px;"><div><div class="dropdown-inner">${items.map((it) => `<button type="button" role="menuitem" class="menu-item ${it.actionClass}"><span class="menu-item__icon">${it.icon}</span><span class="menu-item__label">${it.label}</span></button>`).join("")}</div></div></div></div>`;
+        lc.innerHTML = `<div class="layers-overlay"></div><div class="layers-dropdown-inner"><div role="menu" class="dropdown-menu" style="top: ${top}px; right: ${right}px;"><div><div class="dropdown-inner">${items.map((it) => `<button type="button" role="menuitem" class="menu-item ${it.actionClass}"><span class="menu-item__icon">${it.icon}</span><span class="menu-item__label">${it.label}</span></button>`).join("")}</div></div></div></div>`;
         lc.addEventListener("click", (e) => {
             const item = e.target.closest(".menu-item");
             if (item) {
@@ -364,7 +472,8 @@ window.onload = () => {
         activeMoreButton.setAttribute("aria-expanded", "true");
     };
 
-    // 공유 드롭다운은 #layers에 동적으로 추가되므로 DOM에서 제거한다.
+    // ===== 공유 드롭다운 함수 섹션 =====
+    // 공유 드롭다운은 #layers 요소에 동적으로 생성(appendChild)되고, 닫을 때 remove()로 제거된다.
     const closeShareDropdown = () => {
         if (!activeShareDropdown) {
             return;
@@ -376,7 +485,7 @@ window.onload = () => {
         activeShareButton = null;
     };
 
-    // 공유 바텀시트는 body에 동적으로 추가되므로 DOM에서 제거한다.
+    // 공유 바텀시트(.share-sheet)는 document.body에 동적으로 추가되므로 remove()로 제거한다.
     const closeShareModal = () => {
         if (!activeShareModal) {
             return;
@@ -395,7 +504,9 @@ window.onload = () => {
         return (!hasDraft && !hasAttachment) || window.confirm("게시물을 삭제하시겠어요?");
     };
 
-    // 답글 모달은 HTML에 이미 있으므로 hidden 처리와 입력 초기화만 수행한다.
+    // ===== 답글 모달 함수 섹션 =====
+    // 답글 모달은 HTML에 이미 존재하는 [data-reply-modal] 골격을 hidden 속성으로 토글해서 재사용한다.
+    // 동적 생성/삭제가 아니라 표시/숨김 전환 방식이다.
     const closeReplyModal = (options = {}) => {
         const { skipConfirm = false, restoreFocus = true } = options;
         if (!replyModalOverlay || replyModalOverlay.hidden) {
@@ -407,33 +518,29 @@ window.onload = () => {
         replyModalOverlay.hidden = true;
         document.body.classList.remove("modal-open");
         closeEmojiPicker();
+        closeLocationPanel({ restoreFocus: false });
+        closeTagPanel({ restoreFocus: false });
+        closeMediaEditor({ restoreFocus: false, discardChanges: true });
+        closeDraftPanel({ restoreFocus: false });
+        if (replyProductView) replyProductView.hidden = true;
+        if (replyEditor) replyEditor.textContent = "";
 
-        if (replyEditor) {
-            replyEditor.textContent = "";
-        }
-
-        savedReplySelection = null;
-        savedReplySelectionOffsets = null;
-        pendingReplyFormats = new Set();
-        resetReplyAttachment();
+        savedReplySelection = null; savedReplySelectionOffsets = null; pendingReplyFormats = new Set();
+        selectedLocation = null; pendingLocation = null;
+        selectedTaggedUsers = []; pendingTaggedUsers = [];
         selectedProduct = null;
         if (replyProductButton) replyProductButton.disabled = false;
         const existingProductCard2 = replyModalOverlay?.querySelector("[data-selected-product]");
         if (existingProductCard2) existingProductCard2.remove();
-        if (replyProductView) replyProductView.hidden = true;
-        if (replyLocationView) replyLocationView.hidden = true;
-        selectedLocation = null;
-        pendingLocation = null;
-        syncLocationUI();
-        if (composeView) composeView.hidden = false;
-        syncReplySubmitState();
-        syncReplyFormatButtons();
+        resetReplyAttachment(); renderLocationList(); syncLocationUI();
+        syncUserTagTrigger(); syncReplyMediaEditsToAttachments();
+        syncReplySubmitState(); syncReplyFormatButtons();
 
         if (restoreFocus) activeReplyTrigger?.focus();
         activeReplyTrigger = null;
     };
 
-    // ===== 버튼 상태 / 카운트 / 토스트 =====
+    // ===== 버튼 상태 / 카운트 / 공유 토스트 섹션 =====
     // 북마크 버튼의 아이콘 경로와 라벨을 현재 상태에 맞게 바꾼다.
     const setBookmarkButtonState = (button, isActive) => {
         const path = button?.querySelector("path");
@@ -472,7 +579,7 @@ window.onload = () => {
         return nextCount;
     };
 
-    // 토스트는 HTML에 미리 없고, body 끝에 잠깐 추가했다가 제거한다.
+    // 공유 토스트(.share-toast)는 HTML에 미리 없고, document.body 끝에 잠깐 추가했다가 3초 후 자동 remove()한다.
     const showShareToast = (message) => {
         document.querySelector(".share-toast")?.remove();
         const toast = document.createElement("div");
@@ -533,8 +640,11 @@ window.onload = () => {
             });
     };
 
-    // ===== 공유 UI 동적 생성 =====
-    // 공유용 채팅 바텀시트는 HTML에 정적 마크업이 없어서 body에 새로 만들어 붙인다.
+    // ===== 공유 바텀시트 동적 생성 섹션 =====
+    // 공유용 바텀시트(.share-sheet)는 HTML에 정적 마크업이 없어서
+    // document.body에 새로 만들어 appendChild하고, closeShareModal()에서 remove()로 제거한다.
+
+    // --- Chat 전송 바텀시트 ---
     const openShareChatModal = () => {
         const users = getShareUsers();
         closeShareDropdown();
@@ -568,7 +678,7 @@ window.onload = () => {
         activeShareModal = modal;
     };
 
-    // 북마크 폴더 바텀시트도 body에 동적으로 추가되는 UI다.
+    // --- 북마크 폴더 바텀시트 (document.body에 동적 추가) ---
     const openShareBookmarkModal = (button) => {
         const { bookmarkButton } = getSharePostMeta(button);
         const isBookmarked =
@@ -599,6 +709,7 @@ window.onload = () => {
             if (event.target.closest("[data-share-folder='all-bookmarks']")) {
                 event.preventDefault();
                 setBookmarkButtonState(bookmarkButton, !isBookmarked);
+                showShareToast(isBookmarked ? "북마크가 해제되었습니다" : "북마크에 추가되었습니다");
                 closeShareModal();
             }
         });
@@ -608,7 +719,8 @@ window.onload = () => {
         activeShareModal = modal;
     };
 
-    // 공유 드롭다운은 게시물 버튼 위치를 기준으로 계산해서 #layers 안에 띄운다.
+    // --- 공유 드롭다운 (#layers에 동적 추가) ---
+    // 게시물 버튼 위치를 기준으로 계산해서 #layers 안에 appendChild하고, 닫을 때 remove()로 제거한다.
     const openShareDropdown = (button) => {
         if (!layersRoot) {
             return;
@@ -618,14 +730,10 @@ window.onload = () => {
 
         const rect = button.getBoundingClientRect();
         const top = rect.bottom + window.scrollY + 8;
-        // 드롭다운을 버튼 오른쪽 끝에 맞추되 화면 밖으로 넘어가지 않도록 보정한다.
-        const menuWidth = 260;
-        let left = rect.right + window.scrollX - menuWidth;
-        if (left < 16) left = 16;
-        if (left + menuWidth > window.innerWidth - 16) left = window.innerWidth - 16 - menuWidth;
+        const right = Math.max(16, window.innerWidth - rect.right);
         const dropdown = document.createElement("div");
         dropdown.className = "layers-dropdown-container";
-        dropdown.innerHTML = `<div class="layers-overlay"></div><div class="layers-dropdown-inner"><div role="menu" class="dropdown-menu" style="top: ${top}px; left: ${left}px;"><div><div class="dropdown-inner"><button type="button" role="menuitem" class="menu-item share-menu-item share-menu-item--copy"><span class="menu-item__icon share-menu-item__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18.36 5.64c-1.95-1.96-5.11-1.96-7.07 0L9.88 7.05 8.46 5.64l1.42-1.42c2.73-2.73 7.16-2.73 9.9 0 2.73 2.74 2.73 7.17 0 9.9l-1.42 1.42-1.41-1.42 1.41-1.41c1.96-1.96 1.96-5.12 0-7.07zm-2.12 3.53l-7.07 7.07-1.41-1.41 7.07-7.07 1.41 1.41zm-12.02.71l1.42-1.42 1.41 1.42-1.41 1.41c-1.96 1.96-1.96 5.12 0 7.07 1.95 1.96 5.11 1.96 7.07 0l1.41-1.41 1.42 1.41-1.42 1.42c-2.73 2.73-7.16 2.73-9.9 0-2.73-2.74-2.73-7.17 0-9.9z"></path></g></svg></span><span class="menu-item__label">링크 복사하기</span></button><button type="button" role="menuitem" class="menu-item share-menu-item share-menu-item--chat"><span class="menu-item__icon share-menu-item__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><g><path d="M1.998 5.5c0-1.381 1.119-2.5 2.5-2.5h15c1.381 0 2.5 1.119 2.5 2.5v13c0 1.381-1.119 2.5-2.5 2.5h-15c-1.381 0-2.5-1.119-2.5-2.5v-13zm2.5-.5c-.276 0-.5.224-.5.5v2.764l8 3.638 8-3.636V5.5c0-.276-.224-.5-.5-.5h-15zm15.5 5.463l-8 3.636-8-3.638V18.5c0 .276.224.5.5.5h15c.276 0 .5-.224.5-.5v-8.037z"></path></g></svg></span><span class="menu-item__label">Chat으로 전송하기</span></button><button type="button" role="menuitem" class="menu-item share-menu-item share-menu-item--bookmark"><span class="menu-item__icon share-menu-item__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18 3V0h2v3h3v2h-3v3h-2V5h-3V3zm-7.5 1a.5.5 0 00-.5.5V7h3.5A2.5 2.5 0 0116 9.5v3.48l3 2.1V11h2v7.92l-5-3.5v7.26l-6.5-3.54L3 22.68V9.5A2.5 2.5 0 015.5 7H8V4.5A2.5 2.5 0 0110.5 2H12v2zm-5 5a.5.5 0 00-.5.5v9.82l4.5-2.46 4.5 2.46V9.5a.5.5 0 00-.5-.5z"></path></g></svg></span><span class="menu-item__label">폴더에 북마크 추가하기</span></button></div></div></div></div>`;
+        dropdown.innerHTML = `<div class="layers-overlay"></div><div class="layers-dropdown-inner"><div role="menu" class="dropdown-menu" style="top: ${top}px; right: ${right}px;"><div><div class="dropdown-inner"><button type="button" role="menuitem" class="menu-item share-menu-item share-menu-item--copy"><span class="menu-item__icon share-menu-item__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18.36 5.64c-1.95-1.96-5.11-1.96-7.07 0L9.88 7.05 8.46 5.64l1.42-1.42c2.73-2.73 7.16-2.73 9.9 0 2.73 2.74 2.73 7.17 0 9.9l-1.42 1.42-1.41-1.42 1.41-1.41c1.96-1.96 1.96-5.12 0-7.07zm-2.12 3.53l-7.07 7.07-1.41-1.41 7.07-7.07 1.41 1.41zm-12.02.71l1.42-1.42 1.41 1.42-1.41 1.41c-1.96 1.96-1.96 5.12 0 7.07 1.95 1.96 5.11 1.96 7.07 0l1.41-1.41 1.42 1.41-1.42 1.42c-2.73 2.73-7.16 2.73-9.9 0-2.73-2.74-2.73-7.17 0-9.9z"></path></g></svg></span><span class="menu-item__label">링크 복사하기</span></button><button type="button" role="menuitem" class="menu-item share-menu-item share-menu-item--chat"><span class="menu-item__icon share-menu-item__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><g><path d="M1.998 5.5c0-1.381 1.119-2.5 2.5-2.5h15c1.381 0 2.5 1.119 2.5 2.5v13c0 1.381-1.119 2.5-2.5 2.5h-15c-1.381 0-2.5-1.119-2.5-2.5v-13zm2.5-.5c-.276 0-.5.224-.5.5v2.764l8 3.638 8-3.636V5.5c0-.276-.224-.5-.5-.5h-15zm15.5 5.463l-8 3.636-8-3.638V18.5c0 .276.224.5.5.5h15c.276 0 .5-.224.5-.5v-8.037z"></path></g></svg></span><span class="menu-item__label">Chat으로 전송하기</span></button><button type="button" role="menuitem" class="menu-item share-menu-item share-menu-item--bookmark"><span class="menu-item__icon share-menu-item__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18 3V0h2v3h3v2h-3v3h-2V5h-3V3zm-7.5 1a.5.5 0 00-.5.5V7h3.5A2.5 2.5 0 0116 9.5v3.48l3 2.1V11h2v7.92l-5-3.5v7.26l-6.5-3.54L3 22.68V9.5A2.5 2.5 0 015.5 7H8V4.5A2.5 2.5 0 0110.5 2H12v2zm-5 5a.5.5 0 00-.5.5v9.82l4.5-2.46 4.5 2.46V9.5a.5.5 0 00-.5-.5z"></path></g></svg></span><span class="menu-item__label">폴더에 북마크 추가하기</span></button></div></div></div></div>`;
         dropdown.addEventListener("click", (event) => {
             const actionButton = event.target.closest(".share-menu-item");
             if (!actionButton || !activeShareButton) {
@@ -656,7 +764,7 @@ window.onload = () => {
         activeShareButton.setAttribute("aria-expanded", "true");
     };
 
-    // ===== 초기 이벤트 바인딩 =====
+    // ===== 초기 이벤트 바인딩 섹션 =====
     // 탭 클릭은 시각적 활성화와 짧은 프리뷰만 처리하고, 실제 콘텐츠는 activity 패널에 유지한다.
     const initializeTabs = () => {
         ensureActivityPanelVisible();
@@ -835,7 +943,7 @@ window.onload = () => {
             });
     };
 
-    // ===== 이모지 데이터 및 유틸 =====
+    // ===== 이모지 데이터 및 유틸 섹션 =====
     const emojiRecentsKey = "inquiry_reply_recent_emojis";
     const maxRecentEmojis = 18;
     const emojiCategoryMeta = {
@@ -929,7 +1037,7 @@ window.onload = () => {
         renderEmojiPickerContent();
     }
 
-    // ===== 답글 에디터 헬퍼 함수 =====
+    // ===== 답글 에디터 헬퍼 함수 섹션 (서식/선택 영역) =====
     function hasReplyEditorText() {
         return replyEditor ? replyEditor.textContent.replace(/\u00a0/g, " ").trim().length > 0 : false;
     }
@@ -951,6 +1059,9 @@ window.onload = () => {
         }
         span.style.fontWeight = pendingReplyFormats.has("bold") ? "bold" : "";
         span.style.fontStyle = pendingReplyFormats.has("italic") ? "italic" : "";
+        // DOM에 서식을 반영한 뒤 pending 상태를 비운다.
+        // 이후 서식 상태는 queryCommandState로 판단하므로 중복 적용을 방지한다.
+        pendingReplyFormats = new Set();
         const range = document.createRange();
         range.selectNodeContents(span);
         range.collapse(false);
@@ -1061,7 +1172,144 @@ window.onload = () => {
         syncReplyFormatButtons();
     }
 
-    // ===== 이모지 피커 함수 =====
+    // ===== 사용자 태그 서브뷰 함수 섹션 =====
+    function cloneTaggedUsers(users) { return users.map((u) => ({ ...u })); }
+    function isTagModalOpen() { return Boolean(replyTagView && !replyTagView.hidden); }
+    function getTagSearchTerm() { return replyTagSearchInput?.value.trim() ?? ""; }
+    function getTaggedUserSummary(users) { return users.length === 0 ? "사용자 태그하기" : users.map((u) => u.name).join(", "); }
+    function syncUserTagTrigger() {
+        const can = isReplyImageSet();
+        const label = getTaggedUserSummary(selectedTaggedUsers);
+        if (replyUserTagTrigger) { replyUserTagTrigger.hidden = !can; replyUserTagTrigger.disabled = !can; replyUserTagTrigger.setAttribute("aria-label", label); }
+        if (replyUserTagLabel) replyUserTagLabel.textContent = label;
+        if (!can && isTagModalOpen()) closeTagPanel({ restoreFocus: false });
+    }
+    function getCurrentPageTagUsers() {
+        const items = document.querySelectorAll(".postCard");
+        const seen = new Set();
+        return Array.from(items).map((item, i) => {
+            const name = getTextContent(item.querySelector(".postName"));
+            const handle = getTextContent(item.querySelector(".postHandle"));
+            const avatar = item.querySelector(".postAvatar")?.getAttribute("src") ?? "";
+            if (!name || !handle || seen.has(handle)) return null;
+            seen.add(handle);
+            return { id: `${handle.replace("@", "") || "user"}-${i}`, name, handle, avatar };
+        }).filter(Boolean);
+    }
+    function getFilteredTagUsers(query) {
+        const nq = query.trim().toLowerCase();
+        if (!nq) return [];
+        return getCurrentPageTagUsers().filter((u) => `${u.name} ${u.handle}`.toLowerCase().includes(nq)).slice(0, 6);
+    }
+    function renderTagChipList() {
+        if (!replyTagChipList) return;
+        if (pendingTaggedUsers.length === 0) { replyTagChipList.innerHTML = ""; return; }
+        replyTagChipList.innerHTML = pendingTaggedUsers.map((u) => {
+            const av = u.avatar ? `<span class="tweet-modal__tag-chip-avatar"><img src="${escapeHtml(u.avatar)}" alt="${escapeHtml(u.name)}" /></span>` : '<span class="tweet-modal__tag-chip-avatar"></span>';
+            return `<button type="button" class="tweet-modal__tag-chip" data-tag-remove-id="${escapeHtml(u.id)}">${av}<span class="tweet-modal__tag-chip-name">${escapeHtml(u.name)}</span><svg viewBox="0 0 24 24" aria-hidden="true" class="tweet-modal__tag-chip-icon"><g><path d="M10.59 12 4.54 5.96l1.42-1.42L12 10.59l6.04-6.05 1.42 1.42L13.41 12l6.05 6.04-1.42 1.42L12 13.41l-6.04 6.05-1.42-1.42L10.59 12z"></path></g></svg></button>`;
+        }).join("");
+    }
+    function renderTagResults(users) {
+        if (!replyTagResults || !replyTagSearchInput) return;
+        currentTagResults = users;
+        const hasQuery = getTagSearchTerm().length > 0;
+        if (!hasQuery) {
+            replyTagSearchInput.setAttribute("aria-expanded", "false");
+            replyTagResults.innerHTML = "";
+            return;
+        }
+        replyTagSearchInput.setAttribute("aria-expanded", "true");
+        if (users.length === 0) { replyTagResults.innerHTML = '<p class="tweet-modal__tag-empty">일치하는 사용자를 찾지 못했습니다.</p>'; return; }
+        replyTagResults.innerHTML = users.map((u) => {
+            const sel = pendingTaggedUsers.some((t) => t.id === u.id);
+            const sub = sel ? `${u.handle} 이미 태그됨` : u.handle;
+            const av = u.avatar ? `<span class="tweet-modal__tag-avatar"><img src="${escapeHtml(u.avatar)}" alt="${escapeHtml(u.name)}" /></span>` : '<span class="tweet-modal__tag-avatar"></span>';
+            return `<div role="option" class="tweet-modal__tag-option"><div role="checkbox" aria-checked="${sel}" aria-disabled="${sel}" class="tweet-modal__tag-checkbox"><button type="button" class="tweet-modal__tag-user" data-tag-user-id="${escapeHtml(u.id)}" ${sel ? "disabled" : ""}>${av}<span class="tweet-modal__tag-user-body"><span class="tweet-modal__tag-user-name">${escapeHtml(u.name)}</span><span class="tweet-modal__tag-user-handle">${escapeHtml(sub)}</span></span></button></div></div>`;
+        }).join("");
+    }
+    function runTagSearch() { const tq = getTagSearchTerm(); renderTagResults(tq ? getFilteredTagUsers(tq) : []); }
+    function openTagPanel() {
+        if (!composeView || !replyTagView || !isReplyImageSet()) return;
+        closeEmojiPicker();
+        pendingTaggedUsers = cloneTaggedUsers(selectedTaggedUsers);
+        composeView.hidden = true;
+        replyTagView.hidden = false;
+        if (replyTagSearchInput) replyTagSearchInput.value = "";
+        renderTagChipList();
+        renderTagResults([]);
+        window.requestAnimationFrame(() => { replyTagSearchInput?.focus(); });
+    }
+    function closeTagPanel({ restoreFocus = true } = {}) {
+        if (!composeView || !replyTagView || replyTagView.hidden) return;
+        replyTagView.hidden = true;
+        composeView.hidden = false;
+        pendingTaggedUsers = cloneTaggedUsers(selectedTaggedUsers);
+        if (replyTagSearchInput) replyTagSearchInput.value = "";
+        renderTagChipList();
+        renderTagResults([]);
+        if (restoreFocus) window.requestAnimationFrame(() => { replyUserTagTrigger && !replyUserTagTrigger.hidden ? replyUserTagTrigger.focus() : replyEditor?.focus(); });
+    }
+    function applyPendingTaggedUsers() { selectedTaggedUsers = cloneTaggedUsers(pendingTaggedUsers); syncUserTagTrigger(); }
+    function resetTaggedUsers() { selectedTaggedUsers = []; pendingTaggedUsers = []; if (replyTagSearchInput) replyTagSearchInput.value = ""; renderTagChipList(); renderTagResults([]); syncUserTagTrigger(); }
+
+    // ===== 미디어 ALT 편집 서브뷰 함수 섹션 =====
+    function createDefaultReplyMediaEdit() { return { alt: "" }; }
+    function cloneReplyMediaEdits(edits) { return edits.map((e) => ({ alt: e.alt })); }
+    function isMediaEditorOpen() { return Boolean(replyMediaView && !replyMediaView.hidden); }
+    function getReplyMediaTriggerLabel() { return replyMediaEdits.some((e) => e.alt.trim().length > 0) ? "설명 수정" : "설명 추가"; }
+    function syncReplyMediaEditsToAttachments() {
+        if (!isReplyImageSet()) { replyMediaEdits = []; pendingReplyMediaEdits = []; activeReplyMediaIndex = 0; syncMediaAltTrigger(); return; }
+        replyMediaEdits = attachedReplyFiles.map((_, i) => { const ex = replyMediaEdits[i]; return ex ? { alt: ex.alt ?? "" } : createDefaultReplyMediaEdit(); });
+        if (pendingReplyMediaEdits.length !== replyMediaEdits.length) pendingReplyMediaEdits = cloneReplyMediaEdits(replyMediaEdits);
+        activeReplyMediaIndex = Math.min(activeReplyMediaIndex, Math.max(replyMediaEdits.length - 1, 0));
+        syncMediaAltTrigger();
+    }
+    function syncMediaAltTrigger() {
+        const can = isReplyImageSet();
+        const label = getReplyMediaTriggerLabel();
+        if (replyMediaAltTrigger) { replyMediaAltTrigger.hidden = !can; replyMediaAltTrigger.disabled = !can; replyMediaAltTrigger.setAttribute("aria-label", label); }
+        if (replyMediaAltLabel) replyMediaAltLabel.textContent = label;
+        if (!can && isMediaEditorOpen()) closeMediaEditor({ restoreFocus: false, discardChanges: true });
+    }
+    function getCurrentReplyMediaUrl() { return attachedReplyFileUrls[activeReplyMediaIndex] ?? ""; }
+    function getCurrentPendingReplyMediaEdit() { return pendingReplyMediaEdits[activeReplyMediaIndex] ?? createDefaultReplyMediaEdit(); }
+    function renderMediaEditor() {
+        if (!replyMediaView || pendingReplyMediaEdits.length === 0) return;
+        const edit = getCurrentPendingReplyMediaEdit();
+        const url = getCurrentReplyMediaUrl();
+        const alt = edit.alt ?? "";
+        if (replyMediaTitle) replyMediaTitle.textContent = "이미지 설명 수정";
+        if (replyMediaPrevButton) replyMediaPrevButton.disabled = activeReplyMediaIndex === 0;
+        if (replyMediaNextButton) replyMediaNextButton.disabled = activeReplyMediaIndex >= pendingReplyMediaEdits.length - 1;
+        replyMediaPreviewImages.forEach((img) => { img.src = url; img.alt = alt; });
+        if (replyMediaAltInput) replyMediaAltInput.value = alt;
+        if (replyMediaAltCount) replyMediaAltCount.textContent = `${alt.length} / ${maxReplyMediaAltLength.toLocaleString()}`;
+    }
+    function openMediaEditor() {
+        if (!composeView || !replyMediaView || !isReplyImageSet()) return;
+        closeEmojiPicker();
+        pendingReplyMediaEdits = cloneReplyMediaEdits(replyMediaEdits);
+        activeReplyMediaIndex = 0;
+        composeView.hidden = true;
+        replyMediaView.hidden = false;
+        renderMediaEditor();
+        window.requestAnimationFrame(() => { replyMediaAltInput?.focus(); });
+    }
+    function closeMediaEditor({ restoreFocus = true, discardChanges = true } = {}) {
+        if (!composeView || !replyMediaView || replyMediaView.hidden) return;
+        if (discardChanges) pendingReplyMediaEdits = cloneReplyMediaEdits(replyMediaEdits);
+        replyMediaView.hidden = true;
+        composeView.hidden = false;
+        if (restoreFocus) window.requestAnimationFrame(() => { replyMediaAltTrigger && !replyMediaAltTrigger.hidden ? replyMediaAltTrigger.focus() : replyEditor?.focus(); });
+    }
+    function saveReplyMediaEdits() {
+        replyMediaEdits = cloneReplyMediaEdits(pendingReplyMediaEdits);
+        renderReplyAttachment();
+        syncMediaAltTrigger();
+        closeMediaEditor({ discardChanges: false });
+    }
+
+    // ===== 이모지 피커 함수 섹션 =====
     function hasEmojiButtonLibrary() {
         return typeof window.EmojiButton === "function";
     }
@@ -1204,8 +1452,8 @@ window.onload = () => {
         if (replyEmojiPicker && !replyEmojiPicker.hidden) renderEmojiPicker();
     }
 
-    // ===== 첨부파일 함수 =====
-    function getReplyMediaImageAlt() { return ""; }
+    // ===== 첨부파일 처리 함수 섹션 =====
+    function getReplyMediaImageAlt(index) { return replyMediaEdits[index]?.alt ?? ""; }
     function clearAttachedReplyFileUrls() {
         if (attachedReplyFileUrls.length === 0) return;
         attachedReplyFileUrls.forEach((u) => URL.revokeObjectURL(u));
@@ -1228,6 +1476,8 @@ window.onload = () => {
         if (replyFileInput) replyFileInput.value = "";
         if (replyAttachmentMedia) replyAttachmentMedia.innerHTML = "";
         if (replyAttachmentPreview) replyAttachmentPreview.hidden = true;
+        resetTaggedUsers();
+        syncReplyMediaEditsToAttachments();
     }
     function getReplyImageCell(index, url, cls) {
         const alt = getReplyMediaImageAlt(index);
@@ -1251,10 +1501,14 @@ window.onload = () => {
         if (attachedReplyFiles.length === 0) {
             replyAttachmentMedia.innerHTML = "";
             replyAttachmentPreview.hidden = true;
+            syncReplyMediaEditsToAttachments();
+            syncUserTagTrigger();
             return;
         }
         replyAttachmentPreview.hidden = false;
         createReplyAttachmentUrls();
+        syncReplyMediaEditsToAttachments();
+        syncUserTagTrigger();
         if (isReplyImageSet()) { renderReplyImageGrid(); return; }
         if (isReplyVideoSet()) { renderReplyVideoAttachment(); return; }
         replyAttachmentMedia.innerHTML = "";
@@ -1276,8 +1530,11 @@ window.onload = () => {
     }
     function removeReplyAttachment(index) {
         attachedReplyFiles = attachedReplyFiles.filter((_, i) => i !== index);
+        replyMediaEdits = replyMediaEdits.filter((_, i) => i !== index);
         pendingAttachmentEditIndex = null;
         renderReplyAttachment();
+        syncReplyMediaEditsToAttachments();
+        syncUserTagTrigger();
     }
     function handleReplyFileChange(e) {
         const next = Array.from(e.target.files ?? []);
@@ -1307,7 +1564,7 @@ window.onload = () => {
         syncReplySubmitState();
     }
 
-    // ===== 동기화 함수 =====
+    // ===== 답글 모달 동기화 함수 섹션 =====
     function syncReplySubmitState() {
         if (!replyEditor) return;
         let content = replyEditor.textContent?.replace(/\u00a0/g, " ") ?? "";
@@ -1341,8 +1598,7 @@ window.onload = () => {
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     }
 
-    // 답글 모달은 HTML에 이미 있는 [data-reply-modal] 골격을 게시물 데이터로 채워서 사용한다.
-    // ===== 위치 선택 로직 (Notification과 동일) =====
+    // ===== 위치 선택 서브뷰 함수 섹션 =====
     // 위치 검색 필터
     function getFilteredLocations() {
         const q = replyLocationSearchInput?.value?.trim().toLowerCase() ?? "";
@@ -1419,6 +1675,229 @@ window.onload = () => {
         syncLocationUI();
     }
 
+    // ===== 임시저장(Draft) 서브뷰 함수 섹션 =====
+    // 임시저장 패널의 편집 모드, 확인 대화상자, 선택 항목 상태
+    const draftPanelState = {
+        isEditMode: false,
+        confirmOpen: false,
+        selectedItems: new Set(),
+    };
+
+    // 임시저장 항목 DOM 요소 배열을 반환한다
+    function getDraftItems() {
+        return draftList
+            ? Array.from(draftList.querySelectorAll(".draft-panel__item"))
+            : [];
+    }
+    // 임시저장 선택 상태를 초기화한다
+    function clearDraftSelection() {
+        draftPanelState.selectedItems.clear();
+        draftPanelState.confirmOpen = false;
+    }
+    // 임시저장 편집 모드를 종료한다
+    function exitDraftEditMode() {
+        draftPanelState.isEditMode = false;
+        clearDraftSelection();
+    }
+    // 임시저장 편집 모드를 시작한다
+    function enterDraftEditMode() {
+        if (getDraftItems().length === 0) return;
+        draftPanelState.isEditMode = true;
+        draftPanelState.confirmOpen = false;
+    }
+    // 해당 요소가 유효한 임시저장 항목인지 확인한다
+    function hasDraftItem(item) {
+        return item instanceof HTMLElement && getDraftItems().includes(item);
+    }
+
+    // 임시저장 항목의 선택 상태를 토글한다
+    function toggleDraftSelection(item) {
+        if (!draftPanelState.isEditMode || !hasDraftItem(item)) return;
+        draftPanelState.selectedItems.has(item)
+            ? draftPanelState.selectedItems.delete(item)
+            : draftPanelState.selectedItems.add(item);
+        draftPanelState.confirmOpen = false;
+    }
+
+    // 모든 임시저장 항목이 선택되어 있는지 확인한다
+    function areAllDraftItemsSelected() {
+        const items = getDraftItems();
+        return (
+            items.length > 0 &&
+            items.every((i) => draftPanelState.selectedItems.has(i))
+        );
+    }
+
+    // 임시저장 전체 선택/해제를 토글한다
+    function toggleDraftSelectAll() {
+        if (!draftPanelState.isEditMode) return;
+        const items = getDraftItems();
+        if (items.length === 0) return;
+        areAllDraftItemsSelected()
+            ? draftPanelState.selectedItems.clear()
+            : (draftPanelState.selectedItems = new Set(items));
+        draftPanelState.confirmOpen = false;
+    }
+
+    // 선택된 임시저장 항목이 있는지 확인한다
+    function hasDraftSelection() {
+        return draftPanelState.selectedItems.size > 0;
+    }
+    // 임시저장 삭제 확인 대화상자를 연다
+    function openDraftConfirm() {
+        if (draftPanelState.isEditMode && hasDraftSelection())
+            draftPanelState.confirmOpen = true;
+    }
+    // 임시저장 삭제 확인 대화상자를 닫는다
+    function closeDraftConfirm() {
+        draftPanelState.confirmOpen = false;
+    }
+
+    // 선택된 임시저장 항목을 DOM에서 삭제한다
+    function deleteSelectedDrafts() {
+        if (!hasDraftSelection()) return;
+        getDraftItems().forEach((i) => {
+            if (draftPanelState.selectedItems.has(i)) i.remove();
+        });
+        exitDraftEditMode();
+    }
+
+    // 임시저장 패널 상태를 초기화한다
+    function resetDraftPanel() {
+        exitDraftEditMode();
+        closeDraftConfirm();
+    }
+    // 임시저장 패널이 열려 있는지 확인한다
+    function isDraftPanelOpen() {
+        return Boolean(draftView && !draftView.hidden);
+    }
+    // 임시저장 삭제 확인 대화상자가 열려 있는지 확인한다
+    function isDraftConfirmOpen() {
+        return draftPanelState.confirmOpen;
+    }
+    // 임시저장 비어있음 안내 문구를 반환한다
+    function getDraftEmptyCopy() {
+        return {
+            title: "잠시 생각을 정리합니다",
+            body: "아직 게시할 준비가 되지 않았나요? 임시저장해 두고 나중에 이어서 작성하세요.",
+        };
+    }
+    // 임시저장 삭제 확인 문구를 반환한다
+    function getDraftConfirmCopy() {
+        return {
+            title: "전송하지 않은 게시물 삭제하기",
+            body: "이 작업은 취소할 수 없으며 선택한 전송하지 않은 게시물이 삭제됩니다.",
+        };
+    }
+
+    // 임시저장 항목용 체크박스 요소를 생성한다
+    function buildDraftCheckbox(sel) {
+        const cb = document.createElement("span");
+        cb.className = `draft-panel__checkbox${sel ? " draft-panel__checkbox--checked" : ""}`;
+        cb.setAttribute("aria-hidden", "true");
+        cb.innerHTML =
+            '<svg viewBox="0 0 24 24"><g><path d="M9.86 18a1 1 0 01-.73-.31l-3.9-4.11 1.45-1.38 3.2 3.38 7.46-8.1 1.47 1.36-8.19 8.9A1 1 0 019.86 18z"></path></g></svg>';
+        return cb;
+    }
+
+    // 임시저장 항목들의 선택 상태와 체크박스를 렌더링한다
+    function renderDraftItems() {
+        if (!draftList) return;
+        getDraftItems().forEach((item) => {
+            const sel = draftPanelState.selectedItems.has(item);
+            const old = item.querySelector(".draft-panel__checkbox");
+            if (old) old.remove();
+            item.className = [
+                "draft-panel__item",
+                draftPanelState.isEditMode
+                    ? "draft-panel__item--selectable"
+                    : "",
+                sel ? "draft-panel__item--selected" : "",
+            ]
+                .filter(Boolean)
+                .join(" ");
+            item.setAttribute(
+                "aria-pressed",
+                draftPanelState.isEditMode ? String(sel) : "false",
+            );
+            if (draftPanelState.isEditMode)
+                item.prepend(buildDraftCheckbox(sel));
+        });
+    }
+
+    // HTML의 .draft-panel__list / .draft-panel__empty / .draft-panel__confirm-overlay 를 상태에 맞게 갱신한다.
+    function renderDraftPanel() {
+        if (!draftView) return;
+        const hasItems = getDraftItems().length > 0;
+        const ec = getDraftEmptyCopy(),
+            cc = getDraftConfirmCopy();
+        if (draftActionButton) {
+            draftActionButton.textContent = draftPanelState.isEditMode
+                ? "완료"
+                : "수정";
+            draftActionButton.disabled = !hasItems;
+            draftActionButton.classList.toggle(
+                "draft-panel__action--done",
+                draftPanelState.isEditMode,
+            );
+        }
+        renderDraftItems();
+        if (draftEmpty) draftEmpty.hidden = hasItems;
+        if (draftEmptyTitle) draftEmptyTitle.textContent = ec.title;
+        if (draftEmptyBody) draftEmptyBody.textContent = ec.body;
+        if (draftFooter) draftFooter.hidden = !draftPanelState.isEditMode;
+        if (draftSelectAllButton)
+            draftSelectAllButton.textContent = areAllDraftItemsSelected()
+                ? "모두 선택 해제"
+                : "모두 선택";
+        if (draftDeleteButton)
+            draftDeleteButton.disabled = !hasDraftSelection();
+        if (draftConfirmOverlay)
+            draftConfirmOverlay.hidden = !draftPanelState.confirmOpen;
+        if (draftConfirmTitle) draftConfirmTitle.textContent = cc.title;
+        if (draftConfirmDesc) draftConfirmDesc.textContent = cc.body;
+    }
+
+    // 기존 HTML 서브뷰 전환: .tweet-modal__compose-view 를 숨기고 .tweet-modal__draft-view 를 보여준다.
+    function openDraftPanel() {
+        if (!composeView || !draftView) return;
+        renderDraftPanel();
+        composeView.hidden = true;
+        draftView.hidden = false;
+    }
+
+    // 기존 HTML 서브뷰 전환: .tweet-modal__draft-view 를 숨기고 .tweet-modal__compose-view 로 복귀한다.
+    function closeDraftPanel({ restoreFocus = true } = {}) {
+        if (!composeView || !draftView) return;
+        resetDraftPanel();
+        renderDraftPanel();
+        draftView.hidden = true;
+        composeView.hidden = false;
+        if (restoreFocus) draftButton?.focus();
+    }
+
+    // 클릭 대상에서 가장 가까운 임시저장 항목 요소를 찾는다
+    function getDraftItemByElement(target) {
+        return target.closest(".draft-panel__item");
+    }
+
+    // 임시저장 항목의 텍스트를 에디터에 불러온다
+    function loadDraftIntoComposer(item) {
+        if (!item || !replyEditor) return;
+        replyEditor.textContent = getTextContent(
+            item.querySelector(".draft-panel__text"),
+        );
+        closeDraftPanel({ restoreFocus: false });
+        syncReplySubmitState();
+        saveReplySelection();
+        window.requestAnimationFrame(() => {
+            replyEditor.focus();
+        });
+    }
+
+    // ===== 답글 모달 이벤트 바인딩 섹션 =====
+    // 답글 버튼, 에디터 입력, 서식 버튼, 이모지 피커, 미디어 업로드,
+    // 위치/태그/미디어ALT/임시저장/판매글 서브뷰, 모달 닫기 등 모든 이벤트를 바인딩한다.
     const initializeReplyModal = () => {
         if (
             !replyModalOverlay ||
@@ -1472,23 +1951,32 @@ window.onload = () => {
             }
 
             replyEditor.textContent = "";
-            savedReplySelection = null;
-            savedReplySelectionOffsets = null;
+            savedReplySelection = null; savedReplySelectionOffsets = null;
             pendingReplyFormats = new Set();
             activeEmojiCategory = "recent";
-            closeEmojiPicker();
-            resetReplyAttachment();
+            selectedLocation = null;
+            pendingLocation = null;
+            selectedTaggedUsers = [];
+            pendingTaggedUsers = [];
             selectedProduct = null;
             if (replyProductButton) replyProductButton.disabled = false;
             const existingProductCard = replyModalOverlay?.querySelector("[data-selected-product]");
             if (existingProductCard) existingProductCard.remove();
-            if (replyProductView) replyProductView.hidden = true;
-            if (replyLocationView) replyLocationView.hidden = true;
-            selectedLocation = null;
-            pendingLocation = null;
+            closeEmojiPicker();
+            resetReplyAttachment();
             if (replyEmojiSearchInput) replyEmojiSearchInput.value = "";
+            if (replyLocationSearchInput) replyLocationSearchInput.value = "";
             if (composeView) composeView.hidden = false;
+            if (replyLocationView) replyLocationView.hidden = true;
+            if (replyTagView) replyTagView.hidden = true;
+            if (replyMediaView) replyMediaView.hidden = true;
+            if (replyProductView) replyProductView.hidden = true;
+            closeDraftPanel({ restoreFocus: false });
+            renderDraftPanel();
+            renderLocationList();
             syncLocationUI();
+            syncUserTagTrigger();
+            syncReplyMediaEditsToAttachments();
             syncReplySubmitState();
             syncReplyFormatButtons();
             replyModalOverlay.hidden = false;
@@ -1512,7 +2000,16 @@ window.onload = () => {
         // 에디터 입력 시 서식 적용, 상태 동기화
         replyEditor.addEventListener("input", () => {
             applyPendingReplyFormatsToContent();
-            if (!hasReplyEditorText()) pendingReplyFormats = new Set();
+            if (!hasReplyEditorText()) {
+                pendingReplyFormats = new Set();
+                // 텍스트를 모두 지웠을 때 남아 있는 서식 span을 제거해서
+                // 다음 입력에 이전 서식이 적용되지 않도록 한다
+                replyEditor.innerHTML = "";
+                // 브라우저의 내부 서식 상태(다음 입력에 적용될 bold/italic)도 초기화한다
+                replyEditor.focus();
+                if (document.queryCommandState("bold")) document.execCommand("bold", false);
+                if (document.queryCommandState("italic")) document.execCommand("italic", false);
+            }
             syncReplySubmitState();
             syncReplyFormatButtons();
         });
@@ -1779,6 +2276,112 @@ window.onload = () => {
             replyEditor.parentElement?.appendChild(card);
         }
 
+        // ===== 사용자 태그 서브뷰 =====
+        replyUserTagTrigger?.addEventListener("click", (e) => { e.preventDefault(); openTagPanel(); });
+        replyTagCloseButton?.addEventListener("click", (e) => { e.preventDefault(); closeTagPanel(); });
+        replyTagCompleteButton?.addEventListener("click", (e) => { e.preventDefault(); applyPendingTaggedUsers(); closeTagPanel(); });
+        replyTagSearchForm?.addEventListener("submit", (e) => e.preventDefault());
+        replyTagSearchInput?.addEventListener("input", () => runTagSearch());
+        replyTagResults?.addEventListener("click", (e) => {
+            const btn = e.target.closest("[data-tag-user-id]");
+            if (!btn || btn.disabled) return;
+            e.preventDefault();
+            const uid = btn.getAttribute("data-tag-user-id");
+            const user = currentTagResults.find((u) => u.id === uid);
+            if (user && !pendingTaggedUsers.some((t) => t.id === uid)) {
+                pendingTaggedUsers.push({ ...user });
+                renderTagChipList();
+                runTagSearch();
+            }
+        });
+        replyTagChipList?.addEventListener("click", (e) => {
+            const btn = e.target.closest("[data-tag-remove-id]");
+            if (!btn) return;
+            e.preventDefault();
+            const rid = btn.getAttribute("data-tag-remove-id");
+            pendingTaggedUsers = pendingTaggedUsers.filter((u) => u.id !== rid);
+            renderTagChipList();
+            runTagSearch();
+        });
+
+        // ===== 미디어 ALT 편집 서브뷰 =====
+        replyMediaAltTrigger?.addEventListener("click", (e) => { e.preventDefault(); openMediaEditor(); });
+        replyMediaBackButton?.addEventListener("click", (e) => { e.preventDefault(); closeMediaEditor(); });
+        replyMediaSaveButton?.addEventListener("click", (e) => { e.preventDefault(); saveReplyMediaEdits(); });
+        replyMediaPrevButton?.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (activeReplyMediaIndex > 0) { activeReplyMediaIndex--; renderMediaEditor(); }
+        });
+        replyMediaNextButton?.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (activeReplyMediaIndex < pendingReplyMediaEdits.length - 1) { activeReplyMediaIndex++; renderMediaEditor(); }
+        });
+        replyMediaAltInput?.addEventListener("input", () => {
+            const edit = getCurrentPendingReplyMediaEdit();
+            edit.alt = replyMediaAltInput.value;
+            if (replyMediaAltCount) replyMediaAltCount.textContent = `${edit.alt.length} / ${maxReplyMediaAltLength.toLocaleString()}`;
+        });
+
+        // ===== Draft Panel 이벤트 바인딩 =====
+        // 임시저장 버튼 클릭 시 임시저장 패널을 연다
+        draftButton?.addEventListener("click", (e) => {
+            e.preventDefault();
+            openDraftPanel();
+        });
+        // 임시저장 뒤로가기 클릭 시 패널을 닫는다
+        draftBackButton?.addEventListener("click", (e) => {
+            e.preventDefault();
+            closeDraftPanel();
+        });
+        // 수정/완료 버튼 클릭 시 편집 모드를 토글한다
+        draftActionButton?.addEventListener("click", (e) => {
+            e.preventDefault();
+            draftPanelState.isEditMode ? exitDraftEditMode() : enterDraftEditMode();
+            renderDraftPanel();
+        });
+        // 전체 선택 버튼 클릭 시 모든 항목 선택/해제를 토글한다
+        draftSelectAllButton?.addEventListener("click", (e) => {
+            e.preventDefault();
+            toggleDraftSelectAll();
+            renderDraftPanel();
+        });
+        // 삭제 버튼 클릭 시 삭제 확인 대화상자를 연다
+        draftDeleteButton?.addEventListener("click", (e) => {
+            e.preventDefault();
+            openDraftConfirm();
+            renderDraftPanel();
+        });
+        // 삭제 확인 버튼 클릭 시 선택된 항목을 삭제한다
+        draftConfirmDeleteButton?.addEventListener("click", (e) => {
+            e.preventDefault();
+            deleteSelectedDrafts();
+            renderDraftPanel();
+        });
+        // 삭제 취소 버튼 클릭 시 확인 대화상자를 닫는다
+        draftConfirmCancelButton?.addEventListener("click", (e) => {
+            e.preventDefault();
+            closeDraftConfirm();
+            renderDraftPanel();
+        });
+        // 삭제 확인 배경 클릭 시 확인 대화상자를 닫는다
+        draftConfirmBackdrop?.addEventListener("click", (e) => {
+            e.preventDefault();
+            closeDraftConfirm();
+            renderDraftPanel();
+        });
+
+        // 임시저장 항목 클릭 시 편집 모드면 선택하고, 아니면 에디터에 불러온다
+        draftList?.addEventListener("click", (e) => {
+            const item = getDraftItemByElement(e.target);
+            if (!item) return;
+            if (draftPanelState.isEditMode) {
+                toggleDraftSelection(item);
+                renderDraftPanel();
+                return;
+            }
+            loadDraftIntoComposer(item);
+        });
+
         // 답글 모달 닫기 버튼 클릭 시 모달을 닫는다
         replyCloseButton?.addEventListener("click", () => closeReplyModal());
         // 답글 모달 오버레이 클릭 시 모달을 닫는다
@@ -1788,17 +2391,33 @@ window.onload = () => {
             }
         });
 
-        // Escape 키로 열린 피커/모달을 순서대로 닫고 Tab으로 포커스를 가둔다
+        // Escape 키로 열린 패널/모달을 순서대로 닫고 Tab으로 포커스를 가둔다
         replyModalOverlay.addEventListener("keydown", (e) => {
             if (e.key === "Escape") {
                 e.preventDefault();
-                // 서브뷰가 열려있으면 먼저 닫기
+                if (isMediaEditorOpen()) {
+                    closeMediaEditor();
+                    return;
+                }
+                if (isTagModalOpen()) {
+                    closeTagPanel();
+                    return;
+                }
                 if (replyLocationView && !replyLocationView.hidden) {
                     closeLocationPanel();
                     return;
                 }
                 if (replyProductView && !replyProductView.hidden) {
                     closeProductSelectPanel();
+                    return;
+                }
+                if (isDraftConfirmOpen()) {
+                    closeDraftConfirm();
+                    renderDraftPanel();
+                    return;
+                }
+                if (isDraftPanelOpen()) {
+                    closeDraftPanel();
                     return;
                 }
                 closeReplyModal();
@@ -1830,6 +2449,7 @@ window.onload = () => {
         });
     };
 
+    // ===== 초기화 실행 섹션 =====
     // 화면에 필요한 모든 상호작용을 한 번에 연결한다.
     initializeTabs();
     initializePeriodChips();
@@ -1841,8 +2461,36 @@ window.onload = () => {
     initializeShareButtons();
     initializeReplyModal();
 
-    // ===== 전역 닫기 핸들러 =====
+    // 초기 UI 상태 설정
+    renderLocationList();
+    syncLocationUI();
+    syncUserTagTrigger();
+
+    // 외부 라이브러리가 있으면 기존 이모지 버튼과 연결한다
+    ensureReplyEmojiLibraryPicker();
+
+    // 창 크기 변경 시 이모지 피커 위치를 재계산한다
+    window.addEventListener(
+        "resize",
+        () => {
+            if (replyEmojiPicker && !replyEmojiPicker.hidden)
+                updateEmojiPickerPosition();
+        },
+        { passive: true },
+    );
+    // 스크롤 시 이모지 피커 위치를 재계산한다
+    window.addEventListener(
+        "scroll",
+        () => {
+            if (replyEmojiPicker && !replyEmojiPicker.hidden)
+                updateEmojiPickerPosition();
+        },
+        { passive: true },
+    );
+
+    // ===== 전역 닫기 핸들러 섹션 =====
     // 바깥 영역 클릭 시 열려 있는 드롭다운/메뉴만 닫는다.
+    // Escape 키로 현재 열려 있는 보조 UI를 모두 닫는다.
     document.addEventListener("click", (event) => {
         if (
             filterMenu &&
@@ -1894,6 +2542,7 @@ window.onload = () => {
     });
 };
 
+// ===== 전역 유틸리티 함수 =====
 // contenteditable에 공통으로 쓰는 커서 이동 유틸이다.
 function placeCaretAtEnd(element) {
     const selection = window.getSelection();

@@ -1879,10 +1879,16 @@ window.onload = function () {
         modal.addEventListener("click", (e) => {
             if (
                 e.target.closest("[data-share-close='true']") ||
-                e.target.classList.contains("share-sheet__backdrop") ||
-                e.target.closest(".share-sheet__user")
+                e.target.classList.contains("share-sheet__backdrop")
             ) {
                 e.preventDefault();
+                closeShareModal();
+                return;
+            }
+            if (e.target.closest(".share-sheet__user")) {
+                e.preventDefault();
+                const userName = e.target.closest(".share-sheet__user")?.querySelector(".share-sheet__user-name")?.textContent || "사용자";
+                showShareToast(`${userName}에게 전송함`);
                 closeShareModal();
             }
         });
@@ -1914,12 +1920,14 @@ window.onload = function () {
             }
             if (e.target.closest(".share-sheet__create-folder")) {
                 e.preventDefault();
+                showShareToast("새 폴더 만들기는 준비 중입니다");
                 closeShareModal();
                 return;
             }
             if (e.target.closest("[data-share-folder='all-bookmarks']")) {
                 e.preventDefault();
                 setBookmarkButtonState(bookmarkButton, !isBookmarked);
+                showShareToast(isBookmarked ? "북마크가 해제되었습니다" : "북마크에 추가되었습니다");
                 closeShareModal();
             }
         });
@@ -2070,6 +2078,7 @@ window.onload = function () {
             }
             if (e.target.closest(".notification-dialog__confirm-block")) {
                 e.preventDefault();
+                showNotificationToast(`${handle} 님을 차단했습니다`);
                 closeNotificationModal();
             }
         });
@@ -2098,6 +2107,7 @@ window.onload = function () {
             }
             if (e.target.closest(".notification-report__item")) {
                 e.preventDefault();
+                showNotificationToast("신고가 접수되었습니다");
                 closeNotificationModal();
             }
         });
@@ -2113,7 +2123,7 @@ window.onload = function () {
             const isF = notificationFollowState.get(handle) ?? false;
             notificationFollowState.set(handle, !isF);
             closeNotificationDropdown();
-            if (!isF) showNotificationToast(`${handle} 님을 팔로우함`);
+            showNotificationToast(isF ? `${handle} 님 팔로우를 취소했습니다` : `${handle} 님을 팔로우했습니다`);
             return;
         }
         if (actionClass === "menu-item--block") {
