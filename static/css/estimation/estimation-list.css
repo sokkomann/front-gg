@@ -175,24 +175,117 @@ body.modal-open {
     flex-wrap: wrap;
 }
 
-.estimation-action-btn {
-    min-width: 76px;
-    height: 34px;
-    padding: 0 14px;
+.estimation-more {
+    position: relative;
+    margin-left: auto;
+}
+
+.tweet-more-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
     border-radius: 9999px;
-    font-size: 14px;
+    background: transparent;
+    color: #536471;
+}
+
+.tweet-more-btn:hover {
+    background: rgba(29, 155, 240, 0.12);
+    color: #1d9bf0;
+}
+
+.tweet-more-icon {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.estimation-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 20;
+    min-width: 220px;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow:
+        rgba(15, 20, 25, 0.2) 0 8px 24px,
+        rgba(15, 20, 25, 0.08) 0 2px 8px;
+}
+
+.estimation-more.is-open .estimation-dropdown-menu {
+    display: block;
+}
+
+.dropdown-inner {
+    padding: 8px 0;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    border: none;
+    background: transparent;
+    text-align: left;
+    color: #0f1419;
+    font-size: 15px;
     font-weight: 700;
-    transition: all 0.2s;
+}
+
+.menu-item:hover {
+    background: rgba(244, 33, 46, 0.1);
+}
+
+.menu-item__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    color: #f4212e;
+    flex-shrink: 0;
+}
+
+.menu-item__icon svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.estimation-delete-action .menu-item__label {
+    color: #f4212e;
+}
+
+.estimation-action-btn {
+    width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 18px;
+    border-radius: 9999px;
+    background: #1d9bf0;
+    color: #ffffff;
+    font-size: 17px;
+    font-weight: 700;
 }
 
 .estimation-action-btn--approve {
     border: 1px solid #1d9bf0;
-    background: rgba(29, 155, 240, 0.1);
-    color: #1d9bf0;
+    min-width: 100px;
+    background: #1d9bf0;
+    color: #ffffff;
 }
 
 .estimation-action-btn--approve:hover {
-    background: rgba(29, 155, 240, 0.16);
+    background: #1a8cd8;
 }
 
 .estimation-action-btn--approve.is-active {
@@ -208,12 +301,13 @@ body.modal-open {
 
 .estimation-action-btn--reject {
     border: 1px solid #f4212e;
-    background: rgba(244, 33, 46, 0.1);
-    color: #f4212e;
+    min-width: 100px;
+    background: #f4212e;
+    color: #ffffff;
 }
 
 .estimation-action-btn--reject:hover {
-    background: rgba(244, 33, 46, 0.16);
+    background: #dc1f2b;
 }
 
 .estimation-action-btn--reject.is-active {
@@ -319,11 +413,6 @@ body.modal-open {
     display: flex;
     flex-direction: column;
     gap: 12px;
-}
-
-.estimation-detail-panel__hero .estimation-action-group {
-    margin-left: 0;
-    justify-content: flex-start;
 }
 
 .estimation-detail-panel__title {
@@ -446,6 +535,22 @@ body.modal-open {
     font-weight: 700;
 }
 
+.Detail-Category-Tags {
+    margin-bottom: 8px;
+}
+
+.Category-Tag {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 12px;
+    border-radius: 9999px;
+    background: rgba(29, 155, 240, 0.12);
+    color: #1d9bf0;
+    font-size: 13px;
+    font-weight: 700;
+}
+
 .estimation-detail-product .Detail-Value {
     color: #0f1419;
     font-size: 15px;
@@ -458,6 +563,138 @@ body.modal-open {
     border-top: 1px solid #eff3f4;
 }
 
+.estimation-action-slot--modal {
+    width: 100%;
+    margin-top: 24px;
+    padding-top: 20px;
+    padding-bottom: 4px;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.92) 24px,
+        #ffffff 100%
+    );
+}
+
+.estimation-action-group--modal {
+    display: flex;
+    width: 100%;
+    justify-content: flex-end;
+}
+
+.estimation-action-group--modal[hidden] {
+    display: none;
+}
+
+.estimation-approved-state {
+    width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    margin-left: auto;
+    padding: 0 18px;
+    border-radius: 9999px;
+    background: #1d9bf0;
+    color: #ffffff;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.estimation-confirm-modal[hidden] {
+    display: none;
+}
+
+.estimation-confirm-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 140;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.estimation-confirm-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 20, 25, 0.56);
+}
+
+.estimation-confirm-modal__dialog {
+    position: relative;
+    width: min(360px, calc(100vw - 32px));
+    padding: 24px;
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow:
+        rgba(15, 20, 25, 0.2) 0 10px 40px,
+        rgba(15, 20, 25, 0.08) 0 2px 12px;
+}
+
+.estimation-confirm-modal__title {
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.estimation-confirm-modal__actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.estimation-confirm-modal__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 108px;
+    height: 42px;
+    padding: 0 16px;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.estimation-approved-state[hidden] {
+    display: none;
+}
+
+.estimation-rejected-state {
+    width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    margin-left: auto;
+    padding: 0 18px;
+    border-radius: 9999px;
+    background: #f4212e;
+    color: #ffffff;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.estimation-rejected-state[hidden] {
+    display: none;
+}
+
+.estimation-confirm-modal__button--cancel {
+    background: #eff3f4;
+    color: #0f1419;
+}
+
+.estimation-confirm-modal__button--confirm {
+    background: #1d9bf0;
+    color: #ffffff;
+}
+
+.estimation-confirm-modal__button--confirm.is-reject {
+    background: #f4212e;
+}
+
 .estimation-detail-panel__section h4 {
     font-size: 18px;
     line-height: 22px;
@@ -468,8 +705,9 @@ body.modal-open {
     margin-top: 12px;
     padding-left: 20px;
     color: #0f1419;
-    font-size: 15px;
+    font-size: 16px;
     line-height: 24px;
+    /* white-space: pre-wrap; */
 }
 
 @media (max-width: 687px) {

@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
      * 4. 검색, 섹션 선택, 모달 열기/닫기, 표시 테마 변경을 이벤트로 연결한다.
      */
 
+    const settingsShell = document.querySelector(".settings-shell");
     const navigationList = document.getElementById("settingsNavigationList");
     const searchInput = document.getElementById("settingsSearchInput");
     const detailBackButton = document.getElementById(
@@ -126,6 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     if (
+        !settingsShell ||
         !navigationList ||
         !searchInput ||
         !detailBackButton ||
@@ -1566,15 +1568,20 @@ document.addEventListener("DOMContentLoaded", () => {
         detailList.hidden = false;
 
         if (renderDetailRoute()) {
+            syncMobileDetailState(true);
             return;
         }
 
         detailTitle.textContent = section.title;
         detailSummary.textContent = section.summary;
+        if (window.matchMedia("(max-width: 400px)").matches) {
+            detailBackButton.hidden = false;
+        }
 
         if (section.entries.length === 0) {
             detailList.innerHTML =
                 '<p class="detail-entry__empty">문서에서 상세 분석된 섹션만 현재 클론 범위에 포함되어 있습니다.</p>';
+            syncMobileDetailState(true);
             return;
         }
 
@@ -1611,6 +1618,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 `;
             })
             .join("");
+        syncMobileDetailState(true);
+    }
+
+    function syncMobileDetailState(isActive) {
+        const isMobile = window.matchMedia("(max-width: 400px)").matches;
+        settingsShell.classList.toggle("is-detail-active", isMobile && isActive);
     }
 
     /*
@@ -1835,6 +1848,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        syncMobileDetailState(true);
         selectSection(sectionId);
     });
 
@@ -2314,6 +2328,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     detailBackButton.addEventListener("click", () => {
         if (
+            window.matchMedia("(max-width: 400px)").matches &&
+            activeDetailRoute === ""
+        ) {
+            syncMobileDetailState(false);
+            return;
+        }
+
+        if (
             activeDetailRoute === "username-edit" ||
             activeDetailRoute === "phone-edit" ||
             activeDetailRoute === "email-edit" ||
@@ -2640,4 +2662,5 @@ document.addEventListener("DOMContentLoaded", () => {
     applyAppearanceState();
     renderNavigation();
     renderDetail();
+    syncMobileDetailState(false);
 });

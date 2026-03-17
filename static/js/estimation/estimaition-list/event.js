@@ -34,12 +34,21 @@ window.addEventListener("load", () => {
     const detailCloseButtons = qAll("[data-estimation-detail-close]");
     // 승인/거절 버튼들을 모은다.
     const decisionButtons = qAll("[data-estimation-decision]");
+    // 목록 카드 더보기 버튼들을 모은다.
+    const moreTriggers = qAll("[data-estimation-more-trigger]");
+    // 승인 확인 모달 관련 요소다.
+    const confirmModal = q("[data-estimation-confirm-modal]");
+    const confirmCloseButtons = qAll("[data-estimation-confirm-close]");
+    const confirmSubmitButton = q("[data-estimation-confirm-submit]");
+    const confirmTitle = q("[data-estimation-confirm-title]");
     // 탭 프리뷰 애니메이션 지속 시간이다.
     const PREVIEW_DURATION_MS = 280;
     // 기간칩별 일 수 매핑이다.
     const PERIOD_DAYS = { "7D": 7, "2W": 14, "4W": 28, "3M": 90 };
     // 모달을 연 마지막 버튼을 기억한다.
     let activeDetailTrigger = null;
+    // 확인 대기 중인 버튼 영역이다.
+    let pendingDecision = null;
 
     // 선택된 탭만 활성 상태로 만든다.
     const setActiveTab = (name) => {
@@ -87,6 +96,35 @@ window.addEventListener("load", () => {
         filterMenu.hidden = true;
         // 트리거의 펼침 상태를 닫힘으로 돌린다.
         filterTrigger.setAttribute("aria-expanded", "false");
+    };
+
+    // 더보기 버튼 옆에 붙은 메뉴를 읽는다.
+    const getMoreMenu = (button) => {
+        // 버튼 다음 형제 요소를 메뉴 후보로 잡는다.
+        const menu = button.nextElementSibling;
+        // 메뉴가 HTMLElement면 그대로 반환한다.
+        if (menu instanceof HTMLElement) {
+            // 찾은 메뉴를 돌려준다.
+            return menu;
+        }
+
+        // 메뉴가 없으면 null을 반환한다.
+        return null;
+    };
+
+    // 목록 카드 더보기 메뉴를 모두 닫는다.
+    const closeMoreMenus = () => {
+        // 모든 더보기 버튼을 순회한다.
+        moreTriggers.forEach((button) => {
+            // 버튼을 감싼 더보기 래퍼를 찾는다.
+            const wrapper = button.closest(".estimation-more");
+            // 버튼 펼침 상태를 닫힘으로 돌린다.
+            button.setAttribute("aria-expanded", "false");
+            // 래퍼가 있으면 열린 클래스를 제거한다.
+            if (wrapper instanceof HTMLElement) {
+                wrapper.classList.remove("is-open");
+            }
+        });
     };
 
     // 선택된 상태에 따라 카드를 필터링한다.
@@ -191,11 +229,48 @@ window.addEventListener("load", () => {
         activeDetailTrigger = null;
     };
 
+    // 승인 확인 모달을 닫는다.
+    const closeConfirmModal = () => {
+        if (!confirmModal) return;
+        confirmModal.hidden = true;
+        pendingDecision = null;
+    };
+
+    // 승인 확인 모달을 연다.
+    const openConfirmModal = (slot, type) => {
+        if (!confirmModal || !(slot instanceof HTMLElement) || !type) return;
+        pendingDecision = { slot, type };
+        if (confirmTitle) {
+            confirmTitle.textContent =
+                type === "approve"
+                    ? "정말 승인하시겠습니까?"
+                    : "거절하시겠습니까?";
+        }
+        confirmSubmitButton?.classList.toggle("is-reject", type === "reject");
+        confirmModal.hidden = false;
+    };
+
+    // 버튼 자리를 결과 상태로 바꾼다.
+    const applyDecisionState = (slot, type) => {
+        q("[data-estimation-decision-group]", slot)?.setAttribute("hidden", "");
+        q("[data-estimation-approved-state]", slot)?.setAttribute("hidden", "");
+        q("[data-estimation-rejected-state]", slot)?.setAttribute("hidden", "");
+
+        if (type === "approve") {
+            q("[data-estimation-approved-state]", slot)?.removeAttribute("hidden");
+            return;
+        }
+
+        q("[data-estimation-rejected-state]", slot)?.removeAttribute("hidden");
+    };
+
     // 같은 견적 요청의 승인/거절 버튼 상태를 동기화한다.
     const syncDecisionButtons = (decisionId, selectedDecision) => {
         // 같은 요청을 가리키는 버튼만 순회한다.
         decisionButtons
-            .filter((button) => button.dataset.estimationDecisionId === decisionId)
+            .filter(
+                (button) => button.dataset.estimationDecisionId === decisionId,
+            )
             .forEach((button) => {
                 // 현재 버튼이 선택된 종류인지 계산한다.
                 const isActive =
@@ -260,7 +335,8 @@ window.addEventListener("load", () => {
     // 필터 트리거가 있으면 클릭 이벤트를 붙인다.
     filterTrigger?.addEventListener("click", () => {
         // 현재 메뉴가 열린 상태인지 확인한다.
-        const isExpanded = filterTrigger.getAttribute("aria-expanded") === "true";
+        const isExpanded =
+            filterTrigger.getAttribute("aria-expanded") === "true";
         // 다음 상태를 트리거에 반영한다.
         filterTrigger.setAttribute("aria-expanded", String(!isExpanded));
         // 메뉴가 있으면 hidden 상태를 토글한다.
@@ -294,7 +370,9 @@ window.addEventListener("load", () => {
     });
 
     // 상세 열기 버튼들에 클릭 이벤트를 붙인다.
-    qAll("[data-estimation-detail-target]").forEach((button) => {
+    qAll(
+        ".estimation-preview-card__body[data-estimation-detail-target]",
+    ).forEach((button) => {
         // 버튼 클릭 시 동작을 등록한다.
         button.addEventListener("click", () => {
             // 현재 버튼 기준으로 상세 모달을 연다.
@@ -308,17 +386,68 @@ window.addEventListener("load", () => {
         button.addEventListener("click", closeDetailModal);
     });
 
-    // 승인/거절 버튼들에 클릭 이벤트를 붙인다.
-    decisionButtons.forEach((button) => {
+    // 취소나 배경 클릭이면 확인 모달을 닫는다.
+    confirmCloseButtons.forEach((button) => {
+        button.addEventListener("click", closeConfirmModal);
+    });
+
+    // 확인을 누르면 같은 자리만 결과 상태로 바꾼다.
+    confirmSubmitButton?.addEventListener("click", () => {
+        if (!pendingDecision) return;
+        applyDecisionState(pendingDecision.slot, pendingDecision.type);
+        closeConfirmModal();
+    });
+
+    // 더보기 버튼들에 클릭 이벤트를 붙인다.
+    moreTriggers.forEach((button) => {
+        // 버튼을 감싼 더보기 래퍼를 찾는다.
+        const wrapper = button.closest(".estimation-more");
+        // 버튼에 연결된 메뉴를 미리 찾는다.
+        const menu = getMoreMenu(button);
+        // 래퍼나 메뉴가 없으면 이 버튼은 건너뛴다.
+        if (!(wrapper instanceof HTMLElement) || !menu) {
+            // 더 이상 할 일이 없다.
+            return;
+        }
+
+        // 메뉴 자체 클릭은 카드 클릭으로 번지지 않게 막는다.
+        menu.addEventListener("click", (event) => {
+            // 더보기 영역 바깥으로 이벤트가 퍼지지 않게 한다.
+            event.stopPropagation();
+        });
+
         // 버튼 클릭 시 동작을 등록한다.
         button.addEventListener("click", (event) => {
-            // 카드 본문 상세 열기와 충돌하지 않게 전파를 막는다.
+            // 카드 상세 열기와 충돌하지 않게 전파를 막는다.
             event.stopPropagation();
-            // 같은 요청의 버튼들을 현재 선택으로 맞춘다.
-            syncDecisionButtons(
-                button.dataset.estimationDecisionId || "",
-                button.dataset.estimationDecision || "",
-            );
+            // 현재 열린 상태를 읽는다.
+            const isExpanded = wrapper.classList.contains("is-open");
+            // 다른 메뉴를 먼저 닫는다.
+            closeMoreMenus();
+            // 기존에 닫혀 있었다면 현재 메뉴만 연다.
+            if (!isExpanded) {
+                wrapper.classList.add("is-open");
+                button.setAttribute("aria-expanded", "true");
+            }
+        });
+    });
+
+    // 승인/거절 버튼 동작이다.
+    decisionButtons.forEach((button) => {
+        button.addEventListener("click", (event) => {
+            event.stopPropagation();
+
+            // 승인과 거절은 모두 확인 모달을 거친다.
+            if (
+                button.dataset.estimationDecision === "approve" ||
+                button.dataset.estimationDecision === "reject"
+            ) {
+                openConfirmModal(
+                    button.closest(".estimation-action-slot"),
+                    button.dataset.estimationDecision,
+                );
+                return;
+            }
         });
     });
 
@@ -342,6 +471,43 @@ window.addEventListener("load", () => {
             // 필터 메뉴를 닫는다.
             closeFilterMenu();
         }
+
+        // 더보기 메뉴 바깥 클릭이면 메뉴를 닫는다.
+        if (
+            !target.closest("[data-estimation-more-trigger]") &&
+            !target.closest(".estimation-dropdown-menu")
+        ) {
+            // 모든 더보기 메뉴를 닫는다.
+            closeMoreMenus();
+        }
+
+        // 삭제 메뉴 클릭이면 목록 카드와 상세 패널을 함께 제거한다.
+        const deleteAction = target.closest("[data-estimation-delete]");
+        if (deleteAction instanceof HTMLElement) {
+            // 삭제 대상 ID를 읽는다.
+            const targetId = deleteAction.dataset.estimationDelete || "";
+            // 연결된 카드와 상세 패널을 찾는다.
+            const card = q(
+                `[data-estimation-card][data-estimation-detail-target="${targetId}"]`,
+            );
+            const panel = q(`[data-estimation-detail-panel="${targetId}"]`);
+
+            // 상세 모달이 현재 대상이면 먼저 닫는다.
+            if (detailModal && !detailModal.hidden) {
+                const activePanel = q(
+                    `[data-estimation-detail-panel="${targetId}"]:not([hidden])`,
+                );
+                if (activePanel) {
+                    closeDetailModal();
+                }
+            }
+
+            // 카드와 패널을 DOM에서 제거한다.
+            card?.remove();
+            panel?.remove();
+            // 메뉴도 닫는다.
+            closeMoreMenus();
+        }
     });
 
     // 키보드 ESC 입력을 감시한다.
@@ -363,6 +529,15 @@ window.addEventListener("load", () => {
             // 상세 모달을 닫는다.
             closeDetailModal();
         }
+
+        // 승인 확인 모달이 열려 있으면 닫는다.
+        if (confirmModal && !confirmModal.hidden) {
+            // 승인 확인 모달을 닫는다.
+            closeConfirmModal();
+        }
+
+        // 더보기 메뉴가 열려 있으면 닫는다.
+        closeMoreMenus();
     });
 
     // 초기 로드시 quotes 탭을 보이게 한다.
