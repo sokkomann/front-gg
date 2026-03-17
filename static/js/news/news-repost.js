@@ -1692,7 +1692,7 @@ window.onload = function () {
 
     // 답글 모달에 원본 게시물 정보를 채워 넣는다
     function populateReplyModal(button) {
-        const ti = button.closest(".postCard") || button.closest(".post-detail-reply-card");
+        const ti = button.closest(".postCard");
         if (!ti) return;
         if (replyContextButton)
             replyContextButton.textContent = getTextContent(ti.querySelector(".postHandle")) + " 님에게 보내는 답글";
@@ -1710,13 +1710,11 @@ window.onload = function () {
             );
         if (replySourceTime)
             replySourceTime.textContent = getTextContent(
-                ti.querySelector(".postTime") ||
-                ti.querySelector(".post-detail-reply-identity span:last-child"),
+                ti.querySelector(".postTime"),
             );
         if (replySourceText)
             replySourceText.textContent = getTextContent(
-                ti.querySelector(".postText") ||
-                ti.querySelector(".post-detail-reply-text"),
+                ti.querySelector(".postText"),
             );
     }
 
