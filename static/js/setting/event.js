@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
      * 4. 검색, 섹션 선택, 모달 열기/닫기, 표시 테마 변경을 이벤트로 연결한다.
      */
 
+    const settingsShell = document.querySelector(".settings-shell");
     const navigationList = document.getElementById("settingsNavigationList");
     const searchInput = document.getElementById("settingsSearchInput");
     const detailBackButton = document.getElementById(
@@ -24,8 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
         "settingsDetailActionButton",
     );
     const detailContent = document.getElementById("settingsDetailContent");
-    const detailSummary = document.getElementById("settingsDetailSummary");
-    const detailList = document.getElementById("settingsDetailList");
     const detailRoutes = document.getElementById("settingsDetailRoutes");
     const modalLayer = document.getElementById("settingsModalLayer");
     const appearanceModal = document.getElementById("appearanceModal");
@@ -126,14 +125,14 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     if (
+        !settingsShell ||
         !navigationList ||
         !searchInput ||
         !detailBackButton ||
         !detailTitle ||
         !detailActionButton ||
         !detailContent ||
-        !detailSummary ||
-        !detailList ||
+        !detailRoutes ||
         !modalLayer ||
         !appearanceModal ||
         !shortcutModal ||
@@ -219,149 +218,6 @@ document.addEventListener("DOMContentLoaded", () => {
             "M11.999 22.25c-5.652 0-10.25-4.598-10.25-10.25S6.347 1.75 11.999 1.75 22.249 6.348 22.249 12s-4.598 10.25-10.25 10.25zm0-18.5c-4.549 0-8.25 3.701-8.25 8.25s3.701 8.25 8.25 8.25 8.25-3.701 8.25-8.25-3.701-8.25-8.25-8.25zm.445 6.992c1.747-.096 3.748-.689 3.768-.695l.575 1.916c-.077.022-1.616.48-3.288.689v.498c.287 1.227 1.687 2.866 2.214 3.405l-1.428 1.4c-.188-.191-1.518-1.576-2.286-3.144-.769 1.568-2.098 2.952-2.286 3.144l-1.428-1.4c.527-.54 1.927-2.178 2.214-3.405v-.498c-1.672-.209-3.211-.667-3.288-.689l.575-1.916c.02.006 2.021.6 3.768.695m0 0c.301.017.59.017.891 0M12 6.25c-.967 0-1.75.78-1.75 1.75s.783 1.75 1.75 1.75 1.75-.78 1.75-1.75-.784-1.75-1.75-1.75z",
     };
 
-    /*
-     * 좌측 메뉴는 분석 문서의 전체 설정 목록을 그대로 갖되,
-     * 우측 상세 패널 데이터는 현재 클론 범위에 포함된 섹션만 완전하게 제공한다.
-     * 나머지 메뉴는 클릭해도 해당 타이틀과 준비중 메시지만 보여주는 fallback으로 처리한다.
-     */
-    const navigationSections = [
-        { id: "account", label: "계정", href: "/settings/account" },
-        {
-            id: "notifications",
-            label: "알림",
-            href: "/settings/notifications",
-        },
-        {
-            id: "privacy_and_safety",
-            label: "개인정보 및 안전",
-            href: "/settings/privacy_and_safety",
-        },
-    ];
-
-    const detailSections = {
-        account: {
-            title: "계정",
-            summary:
-                "계정 정보를 확인하고, 계정 비활성화 옵션에 대해 자세히 알아보세요.",
-            entries: [
-                {
-                    title: "계정 정보",
-                    description:
-                        "휴대폰 번호와 이메일 주소와 같은 계정 정보를 조회하세요.",
-                    href: "/settings/your_twitter_data/account",
-                    icon: icons.account,
-                },
-                {
-                    title: "비밀번호 변경",
-                    description: "언제든지 비밀번호를 변경하세요.",
-                    href: "/settings/password",
-                    icon: icons.key,
-                },
-                {
-                    title: "계정 비활성화",
-                    description: "계정을 비활성화하는 법을 알아보세요.",
-                    href: "/settings/deactivate",
-                    icon: icons.deactivate,
-                },
-            ],
-        },
-        notifications: {
-            title: "알림",
-            summary:
-                "활동, 관심사 및 추천에 관해 받는 알림의 종류를 선택합니다.",
-            entries: [
-                {
-                    title: "필터",
-                    description:
-                        "확인하고자 하는 알림과 확인하고 싶지 않은 알림을 선택하세요.",
-                    href: "/settings/notifications/filters",
-                    icon: icons.filter,
-                },
-                {
-                    title: "환경설정",
-                    description: "알림 유형별로 환경설정을 선택하세요.",
-                    href: "/settings/notifications/preferences",
-                    icon: icons.preferences,
-                },
-            ],
-        },
-        privacy_and_safety: {
-            title: "개인정보 및 안전",
-            summary:
-                "노출 범위와 상호작용 방식을 조정하고, 뮤트 및 차단 같은 안전 도구를 관리합니다.",
-            entries: [
-                {
-                    title: "내 게시물",
-                    description:
-                        "게시물 공개 범위와 태그 허용 여부 같은 공개 설정을 관리합니다.",
-                    href: "/settings/privacy_and_safety/your_posts",
-                    icon: icons.account,
-                },
-                {
-                    title: "뮤트 및 차단",
-                    description:
-                        "뮤트하거나 차단한 계정, 단어, 알림을 한곳에서 관리합니다.",
-                    href: "/settings/privacy_and_safety/mute_and_block",
-                    icon: icons.filter,
-                },
-                {
-                    title: "채팅",
-                    description:
-                        "누가 메시지를 보낼 수 있는지와 메시지 관련 권한을 조정합니다.",
-                    href: "/settings/privacy_and_safety/direct_messages",
-                    icon: icons.preferences,
-                },
-                {
-                    title: "계정찾기 및 연락처",
-                    description:
-                        "이메일 주소와 휴대폰 번호로 내 계정을 찾을 수 있는지 관리합니다.",
-                    href: "/settings/privacy_and_safety/discoverability_and_contacts",
-                    icon: icons.accessibility,
-                },
-            ],
-        },
-        accessibility_display_and_languages: {
-            title: "접근성, 표시, 언어",
-            summary: "X의 콘텐츠 표시 방식을 관리합니다.",
-            entries: [
-                {
-                    title: "접근성",
-                    description:
-                        "색 대비와 동작 제한 등 X에서의 환경을 관리합니다.",
-                    href: "/settings/accessibility",
-                    icon: icons.accessibility,
-                },
-                {
-                    title: "표시",
-                    description:
-                        "글꼴 크기, 색상 및 배경을 관리합니다. 이러한 설정은 이 브라우저의 모든 X 계정에 적용됩니다.",
-                    href: "/settings/display",
-                    icon: icons.display,
-                    modal: "appearance",
-                },
-                {
-                    title: "언어",
-                    description:
-                        "사용자 환경을 맞춤 설정할 때 사용되는 언어를 관리합니다.",
-                    href: "/settings/languages",
-                    icon: icons.language,
-                },
-                {
-                    title: "데이터 사용량",
-                    description:
-                        "X는 이 디바이스에서 사용자의 일부 네트워크 데이터를 사용하는 방식을 제한합니다.",
-                    href: "/settings/data",
-                    icon: icons.data,
-                },
-                {
-                    title: "키보드 단축키",
-                    href: "/i/keyboard_shortcuts",
-                    icon: icons.shortcuts,
-                    modal: "shortcuts",
-                },
-            ],
-        },
-    };
 
     const accentOptions = [
         { id: "blue", label: "기본", color: "#1d9bf0" },
@@ -516,24 +372,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 <g><path d="${path}"></path></g>
             </svg>
         `;
-    }
-
-    function getFallbackSection(sectionId) {
-        const navigationItem = navigationSections.find(
-            (section) => section.id === sectionId,
-        );
-        return {
-            title: navigationItem?.label ?? "설정",
-            summary: "이 항목은 현재 설정 클론 범위에서 제외되어 있습니다.",
-            entries: [],
-        };
-    }
-
-    function getActiveSectionData() {
-        return (
-            detailSections[activeSectionId] ??
-            getFallbackSection(activeSectionId)
-        );
     }
 
     function getUsernameValidationMessage(value) {
@@ -757,30 +595,7 @@ document.addEventListener("DOMContentLoaded", () => {
         routeRoot.dataset[datasetKey] = "true";
     }
 
-    function buildAccountInfoListMarkup() {
-        return accountInfoItems
-            .map((item) => {
-                const descriptionMarkup = item.description
-                    ? `<span class="account-info-item__description">${item.description}</span>`
-                    : "";
-                const arrowMarkup =
-                    item.showArrow === false
-                        ? ""
-                        : `<span class="account-info-item__arrow">${buildIcon(icons.arrow)}</span>`;
-
-                return `
-                    <button type="button" class="account-info-item" data-account-info-id="${item.id}">
-                        <span class="account-info-item__content">
-                            <span class="account-info-item__label">${item.label}</span>
-                            <span class="account-info-item__value">${item.value || "&nbsp;"}</span>
-                            ${descriptionMarkup}
-                        </span>
-                        ${arrowMarkup}
-                    </button>
-                `;
-            })
-            .join("");
-    }
+    // buildAccountInfoListMarkup은 HTML에 정적으로 삽입되어 삭제됨
 
     function buildUsernameSuggestionMarkup(value) {
         return buildUsernameSuggestions(value)
@@ -1144,6 +959,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 input.checked = input.value === notificationPreferenceState.emailDigest;
             }
         });
+
+        const contentSection = routeRoot.querySelector(".notification-email-editor__content");
+        if (contentSection) contentSection.hidden = !notificationPreferenceState.isEmailEnabled;
     }
 
     function syncNotificationPushRoute(routeRoot) {
@@ -1151,6 +969,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (toggle instanceof HTMLInputElement) {
             toggle.checked = notificationPreferenceState.isPushEnabled;
         }
+        const emptySection = routeRoot.querySelector(".notification-push-editor__empty");
+        const contentSection = routeRoot.querySelector(".notification-push-editor__content");
+        if (emptySection) emptySection.hidden = notificationPreferenceState.isPushEnabled;
+        if (contentSection) contentSection.hidden = !notificationPreferenceState.isPushEnabled;
     }
 
     function syncPrivacyChatRoute(routeRoot) {
@@ -1280,16 +1102,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function syncPhoneRoute(routeRoot) {
         const phoneItem = accountInfoItems.find((item) => item.id === "phone");
-        const phoneValue = phoneItem?.value || "+821099139076";
+        const phoneValue = phoneItem?.value || "";
         const phoneValueNode = routeRoot.querySelector("[data-phone-current-value]");
         const verifiedScreen = routeRoot.querySelector("[data-phone-verified-screen]");
+        const addButton = routeRoot.querySelector(".phone-editor__action");
+        const hasPhone = Boolean(phoneValue);
 
         if (phoneValueNode instanceof HTMLElement) {
             phoneValueNode.textContent = phoneValue;
         }
         if (verifiedScreen instanceof HTMLElement) {
-            verifiedScreen.hidden = true;
-            verifiedScreen.setAttribute("aria-hidden", "true");
+            verifiedScreen.hidden = !hasPhone;
+            verifiedScreen.setAttribute("aria-hidden", String(!hasPhone));
+        }
+        if (addButton instanceof HTMLElement) {
+            addButton.hidden = hasPhone;
         }
     }
 
@@ -1309,10 +1136,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!(countrySelect instanceof HTMLSelectElement)) {
             return;
-        }
-
-        if (countrySelect.options.length === 0) {
-            countrySelect.innerHTML = countryOptionMarkup;
         }
 
         const matchedOption = Array.from(countrySelect.options).find(
@@ -1348,168 +1171,98 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function syncAccountInfoListRoute(routeRoot) {
-        const accountInfoList = routeRoot.querySelector("[data-account-info-list]");
-        if (accountInfoList instanceof HTMLElement) {
-            accountInfoList.innerHTML = buildAccountInfoListMarkup();
+        const languageValue = routeRoot.querySelector("[data-language-current-value]");
+        if (languageValue instanceof HTMLElement) {
+            languageValue.textContent = getCombinedLanguageLabel();
         }
     }
 
-    function renderDetailRoute() {
-        const routeRoot = showDetailRouteView(activeDetailRoute);
-        if (!(routeRoot instanceof HTMLElement)) {
-            return false;
-        }
-
-        detailBackButton.hidden = false;
-        detailTitle.textContent = "계정 정보";
-        detailSummary.hidden = true;
-        detailList.hidden = true;
-
+    function syncDetailRoute(routeRoot) {
         if (activeDetailRoute === "account-info-auth") {
             bindRouteOnce(routeRoot, "boundAccountAuth", bindAccountInfoAuthRoute);
             syncAccountInfoAuthRoute(routeRoot);
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "account-info-list") {
             syncAccountInfoListRoute(routeRoot);
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "username-edit") {
-            detailTitle.textContent = "사용자 이름 변경";
             bindRouteOnce(routeRoot, "boundUsername", bindUsernameRoute);
             syncUsernameRoute(routeRoot);
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "password-edit") {
-            detailTitle.textContent = "비밀번호 변경";
             bindRouteOnce(routeRoot, "boundPasswordEditor", bindPasswordEditorRoute);
             syncPasswordEditorRoute(routeRoot);
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "deactivate-edit") {
-            detailTitle.textContent = "계정 비활성화";
             syncDeactivateRoute(routeRoot);
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "notification-filter-edit") {
-            detailTitle.textContent = "필터";
             syncNotificationFilterRoute(routeRoot);
-            return true;
+            return;
         }
-
-        if (
-            activeDetailRoute === "notification-muted-edit" ||
-            activeDetailRoute === "privacy-muted-notifications-edit"
-        ) {
-            detailTitle.textContent = "뮤트 상태의 알림";
+        if (activeDetailRoute === "notification-muted-edit" || activeDetailRoute === "privacy-muted-notifications-edit") {
             syncNotificationMutedRoute(routeRoot);
-            return true;
+            return;
         }
-
-        if (activeDetailRoute === "notification-preferences-edit") {
-            detailTitle.textContent = "환경설정";
-            return true;
-        }
-
         if (activeDetailRoute === "notification-email-edit") {
-            detailTitle.textContent = "이메일 알림";
             syncNotificationEmailRoute(routeRoot);
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "notification-push-edit") {
-            detailTitle.textContent = "푸시 알림";
             syncNotificationPushRoute(routeRoot);
-            return true;
+            return;
         }
-
-        if (activeDetailRoute === "privacy-mute-block-edit") {
-            detailTitle.textContent = "뮤트 및 차단";
-            return true;
-        }
-
         if (activeDetailRoute === "privacy-chat-edit") {
-            detailTitle.textContent = "채팅";
             syncPrivacyChatRoute(routeRoot);
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "privacy-discoverability-edit") {
-            detailTitle.textContent = "계정찾기 및 연락처";
             syncPrivacyDiscoverabilityRoute(routeRoot);
-            return true;
+            return;
         }
-
-        if (activeDetailRoute === "privacy-blocked-accounts-edit") {
-            detailTitle.textContent = "차단한 계정";
-            return true;
-        }
-
-        if (activeDetailRoute === "privacy-muted-accounts-edit") {
-            detailTitle.textContent = "뮤트한 계정";
-            return true;
-        }
-
         if (activeDetailRoute === "privacy-muted-words-edit") {
-            detailTitle.textContent = "뮤트한 단어";
             setDetailHeaderAction({
                 iconPath: icons.add,
                 ariaLabel: "뮤트한 단어 추가",
                 action: "muted-words-add",
             });
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "privacy-muted-words-add-edit") {
-            detailTitle.textContent = "뮤트할 단어 추가하기";
             bindRouteOnce(routeRoot, "boundMutedWordForm", bindMutedWordFormRoute);
             syncMutedWordFormRoute(routeRoot);
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "privacy-posts-edit") {
-            detailTitle.textContent = "내 게시물";
             syncPrivacyPostsRoute(routeRoot);
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "privacy-posts-location-edit") {
-            detailTitle.textContent = "게시물에 위치 정보 넣기";
             syncPrivacyPostsLocationRoute(routeRoot);
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "phone-edit") {
-            detailTitle.textContent = "휴대폰 변경";
             syncPhoneRoute(routeRoot);
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "email-edit") {
-            detailTitle.textContent = "이메일 변경";
             syncEmailRoute(routeRoot);
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "country-edit") {
-            detailTitle.textContent = "국가 변경";
             bindRouteOnce(routeRoot, "boundCountryRoute", bindCountryRoute);
             syncCountryRoute(routeRoot);
-            return true;
+            return;
         }
-
         if (activeDetailRoute === "language-edit") {
-            detailTitle.textContent = "언어";
             syncLanguageRoute(routeRoot);
-            return true;
+            return;
         }
-
-        return true;
     }
 
     /*
@@ -1520,97 +1273,50 @@ document.addEventListener("DOMContentLoaded", () => {
      */
     function renderNavigation(searchTerm = "") {
         const normalizedTerm = searchTerm.trim().toLowerCase();
-        navigationList.innerHTML = navigationSections
-            .map((section) => {
-                const isVisible =
-                    !normalizedTerm ||
-                    section.label.toLowerCase().includes(normalizedTerm);
-                const isActive = section.id === activeSectionId;
-                const arrowIcon = section.external
-                    ? icons.external
-                    : icons.arrow;
-
-                return `
-                    <div class="navigation-entry${isActive ? " navigation-entry--active" : ""}${isVisible ? "" : " navigation-entry--hidden"}">
-                        <a
-                            class="navigation-entry__link"
-                            href="${section.href}"
-                            role="tab"
-                            aria-selected="${String(isActive)}"
-                            data-section-id="${section.id}"
-                            ${section.external ? 'target="_blank" rel="noreferrer"' : ""}
-                        >
-                            <span class="navigation-entry__label">${section.label}</span>
-                            <span class="navigation-entry__icon">
-                                ${buildIcon(arrowIcon)}
-                            </span>
-                        </a>
-                        ${isActive ? '<span class="navigation-entry__indicator" aria-hidden="true"></span>' : ""}
-                    </div>
-                `;
-            })
-            .join("");
+        navigationList.querySelectorAll("[data-nav-entry]").forEach((entry) => {
+            const link = entry.querySelector("[data-section-id]");
+            if (!(link instanceof HTMLElement)) return;
+            const sectionId = link.dataset.sectionId;
+            const label = link.querySelector(".navigation-entry__label")?.textContent || "";
+            const isVisible = !normalizedTerm || label.toLowerCase().includes(normalizedTerm);
+            const isActive = sectionId === activeSectionId;
+            const indicator = entry.querySelector(".navigation-entry__indicator");
+            entry.classList.toggle("navigation-entry--active", isActive);
+            entry.classList.toggle("navigation-entry--hidden", !isVisible);
+            link.setAttribute("aria-selected", String(isActive));
+            if (indicator) indicator.hidden = !isActive;
+        });
     }
 
     /*
      * 우측 상세 패널 렌더링:
-     * - 좌측 메뉴에서 선택된 섹션의 제목/설명/항목 목록을 교체한다
-     * - `modal` 값이 있는 항목은 실제 페이지 이동 대신 오버레이를 연다
+     * - 좌측 메뉴에서 선택된 섹션 또는 활성 라우트를 data-detail-route-view로 표시
+     * - 제목은 routeRoot의 data-route-title에서 읽는다
      */
     function renderDetail() {
-        const section = getActiveSectionData();
         resetDetailHeaderAction();
         hideDetailRouteViews();
-        detailBackButton.hidden = true;
-        detailSummary.hidden = false;
-        detailList.hidden = false;
+        detailBackButton.hidden = !activeDetailRoute;
 
-        if (renderDetailRoute()) {
-            return;
+        const routeName = activeDetailRoute || activeSectionId;
+        const routeRoot = showDetailRouteView(routeName);
+
+        if (routeRoot instanceof HTMLElement) {
+            detailTitle.textContent = routeRoot.dataset.routeTitle || "";
+            if (activeDetailRoute) {
+                syncDetailRoute(routeRoot);
+            }
+            if (window.matchMedia("(max-width: 400px)").matches && !activeDetailRoute) {
+                detailBackButton.hidden = false;
+            }
         }
 
-        detailTitle.textContent = section.title;
-        detailSummary.textContent = section.summary;
+        syncMobileDetailState(true);
+    }
 
-        if (section.entries.length === 0) {
-            detailList.innerHTML =
-                '<p class="detail-entry__empty">문서에서 상세 분석된 섹션만 현재 클론 범위에 포함되어 있습니다.</p>';
-            return;
-        }
-
-        detailList.innerHTML = section.entries
-            .map((entry) => {
-                const descriptionMarkup = entry.description
-                    ? `<p class="detail-entry__description">${entry.description}</p>`
-                    : "";
-                const modalAttrs = entry.modal
-                    ? `data-modal-type="${entry.modal}"`
-                    : "";
-
-                return `
-                    <a
-                        class="detail-entry"
-                        href="${entry.href}"
-                        role="tab"
-                        aria-selected="false"
-                        ${modalAttrs}
-                    >
-                        <span class="detail-entry__content">
-                            <span class="detail-entry__icon">
-                                ${buildIcon(entry.icon)}
-                            </span>
-                            <span class="detail-entry__body">
-                                <span class="detail-entry__title">${entry.title}</span>
-                                ${descriptionMarkup}
-                            </span>
-                        </span>
-                        <span class="detail-entry__arrow">
-                            ${buildIcon(icons.arrow)}
-                        </span>
-                    </a>
-                `;
-            })
-            .join("");
+    function syncMobileDetailState(isActive) {
+        const isMobile = window.matchMedia("(max-width: 400px)").matches;
+        settingsShell.classList.toggle("is-detail-active", isMobile && isActive);
     }
 
     /*
@@ -1619,35 +1325,12 @@ document.addEventListener("DOMContentLoaded", () => {
      * - 배경 선택은 body data 속성을 바꿔 페이지 전체 톤을 바꾼다
      */
     function renderAppearanceOptions() {
-        appearanceAccentList.innerHTML = accentOptions
-            .map(
-                (option) => `
-                    <button
-                        type="button"
-                        class="appearance-chip${appearanceState.accent === option.id ? " appearance-chip--active" : ""}"
-                        data-accent-id="${option.id}"
-                    >
-                        <span class="appearance-chip__dot" style="background:${option.color}"></span>
-                        <span class="appearance-chip__label">${option.label}</span>
-                    </button>
-                `,
-            )
-            .join("");
-
-        appearanceSurfaceList.innerHTML = surfaceOptions
-            .map(
-                (option) => `
-                    <button
-                        type="button"
-                        class="surface-chip${appearanceState.surface === option.id ? " surface-chip--active" : ""}"
-                        data-surface-id="${option.id}"
-                    >
-                        <span class="surface-chip__swatch" style="background:${option.color}"></span>
-                        <span class="surface-chip__label">${option.label}</span>
-                    </button>
-                `,
-            )
-            .join("");
+        appearanceAccentList.querySelectorAll("[data-accent-id]").forEach((btn) => {
+            btn.classList.toggle("appearance-chip--active", btn.dataset.accentId === appearanceState.accent);
+        });
+        appearanceSurfaceList.querySelectorAll("[data-surface-id]").forEach((btn) => {
+            btn.classList.toggle("surface-chip--active", btn.dataset.surfaceId === appearanceState.surface);
+        });
     }
 
     /*
@@ -1835,10 +1518,11 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        syncMobileDetailState(true);
         selectSection(sectionId);
     });
 
-    detailList.addEventListener("click", (event) => {
+    detailRoutes.addEventListener("click", (event) => {
         const target = event.target;
         if (!(target instanceof Element)) {
             return;
@@ -2048,6 +1732,13 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
+        const deactivateConfirmButton = target.closest("[data-deactivate-confirm]");
+        if (deactivateConfirmButton instanceof HTMLButtonElement) {
+            activeDetailRoute = "deactivate-confirm";
+            renderDetail();
+            return;
+        }
+
         const notificationFilterToggle = target.closest(
             "[data-notification-filter-toggle]",
         );
@@ -2212,6 +1903,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (target.matches("[data-notification-push-toggle]")) {
             notificationPreferenceState.isPushEnabled = target.checked;
+            renderDetail();
             return;
         }
 
@@ -2219,6 +1911,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const toggleKey = target.dataset.notificationEmailToggle;
             if (toggleKey === "enabled") {
                 notificationPreferenceState.isEmailEnabled = target.checked;
+                renderDetail();
                 return;
             }
 
@@ -2314,6 +2007,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     detailBackButton.addEventListener("click", () => {
         if (
+            window.matchMedia("(max-width: 400px)").matches &&
+            activeDetailRoute === ""
+        ) {
+            syncMobileDetailState(false);
+            return;
+        }
+
+        if (
             activeDetailRoute === "username-edit" ||
             activeDetailRoute === "phone-edit" ||
             activeDetailRoute === "email-edit" ||
@@ -2373,6 +2074,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     phoneAddInput.addEventListener("input", () => {
+        phoneAddInput.value = phoneAddInput.value.replace(/[^0-9]/g, "");
         phoneModalState.phoneNumber = phoneAddInput.value;
         applyPhoneAddActionState();
     });
@@ -2418,6 +2120,21 @@ document.addEventListener("DOMContentLoaded", () => {
         phoneModalState.isHelpMenuOpen = false;
         renderPhoneAddStep();
         phoneCodeInput.focus();
+    });
+
+    phoneCodeActionButton.addEventListener("click", () => {
+        const phoneItem = accountInfoItems.find((item) => item.id === "phone");
+        if (phoneItem) {
+            phoneItem.value = phoneModalState.phoneNumber;
+        }
+        const phoneValueNode = document.querySelector("[data-account-info-value='phone']");
+        if (phoneValueNode instanceof HTMLElement) {
+            phoneValueNode.textContent = phoneModalState.phoneNumber || "\u00a0";
+        }
+        phoneModalState.step = "add";
+        phoneModalState.code = "";
+        closeModal();
+        renderDetail();
     });
 
     phoneCodeResendButton.addEventListener("click", (event) => {
@@ -2640,4 +2357,5 @@ document.addEventListener("DOMContentLoaded", () => {
     applyAppearanceState();
     renderNavigation();
     renderDetail();
+    syncMobileDetailState(false);
 });

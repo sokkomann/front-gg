@@ -144,7 +144,7 @@ function getTextContent(element) {
     return element?.textContent?.trim() ?? "";
 }
 
-function cloneUsers(users) {
+function cloneTaggedUsers(users) {
     return users.map((user) => ({ ...user }));
 }
 
@@ -1274,11 +1274,13 @@ function setupComposerModal() {
         return;
     }
 
+    const composerProductModal = document.querySelector("[data-composer-product-modal]"); // 판매글 선택 서브뷰
     const composerSubviews = [
         { element: locationView, className: "isLocationViewOpen" },
         { element: mediaView, className: "isMediaViewOpen" },
         { element: tagView, className: "isTagViewOpen" },
         { element: draftView, className: "isDraftViewOpen" },
+        { element: composerProductModal, className: "isProductViewOpen" }, // 판매글 선택 서브뷰
     ];
 
     function syncComposerModalSubviews(activeView = null) {
@@ -1989,6 +1991,11 @@ function setupComposerToolbar() {
     );
     const mediaAltInput = document.getElementById("composerMediaAltInput");
     const mediaAltCount = document.getElementById("composerMediaAltCount");
+    const composerEmojiButton = document.querySelector("[data-testid='composerEmojiButton']"); // 이모티콘 버튼
+    const composerEmojiPicker = document.querySelector("[data-composer-emoji-picker]"); // 이모티콘 피커 패널
+    const composerProductButton = document.querySelector("[data-testid='composerProductButton']"); // 상품 등록 버튼
+    const composerProductModal = document.querySelector("[data-composer-product-modal]"); // 판매글 선택 서브뷰
+    const composerProductClose = composerProductModal?.querySelector("[data-composer-product-close]"); // 판매글 서브뷰 뒤로가기
     const maxAttachments = 4;
     const maxComposerMediaAltLength = 1000;
     const availableLocations = [
@@ -2009,6 +2016,7 @@ function setupComposerToolbar() {
     let cachedLocationNames = [];
     let savedComposerSelection = null;
     let pendingComposerFormats = new Set();
+    let composerWasEmpty = true;
     let attachedComposerFiles = [];
     let pendingAttachmentEditIndex = null;
     let selectedTaggedUsers = [];
@@ -2112,31 +2120,33 @@ function setupComposerToolbar() {
     // 서식 버튼은 현재 선택 영역이 있으면 즉시 적용하고, 없으면 pending 상태로 저장한다.
     function applyComposerFormat(format) {
         composerTextarea.focus();
+        togglePendingComposerFormat(format);
 
-        if (!hasComposerText()) {
-            togglePendingComposerFormat(format);
-            syncFormatButtons();
-            return;
+        if (hasComposerText()) {
+            if (!restoreComposerSelection()) {
+                const range = document.createRange();
+                range.selectNodeContents(composerTextarea);
+                range.collapse(false);
+
+                const selection = window.getSelection();
+                selection?.removeAllRanges();
+                selection?.addRange(range);
+            }
+
+            try {
+                const cmdActive = document.queryCommandState(format);
+                const shouldBeActive = pendingComposerFormats.has(format);
+                if (cmdActive !== shouldBeActive) {
+                    document.execCommand(format, false);
+                }
+            } catch {
+                // ignore
+            }
+
+            saveComposerSelection();
+            composerTextarea.dispatchEvent(new Event("input", { bubbles: true }));
         }
 
-        if (!restoreComposerSelection()) {
-            const range = document.createRange();
-            range.selectNodeContents(composerTextarea);
-            range.collapse(false);
-
-            const selection = window.getSelection();
-            selection?.removeAllRanges();
-            selection?.addRange(range);
-        }
-
-        try {
-            document.execCommand(format, false);
-        } catch {
-            return;
-        }
-
-        saveComposerSelection();
-        composerTextarea.dispatchEvent(new Event("input", { bubbles: true }));
         syncFormatButtons();
     }
 
@@ -2147,15 +2157,7 @@ function setupComposerToolbar() {
                 return;
             }
 
-            let isActive = false;
-            try {
-                isActive = hasComposerText()
-                    ? document.queryCommandState(format)
-                    : pendingComposerFormats.has(format);
-            } catch {
-                isActive = pendingComposerFormats.has(format);
-            }
-
+            const isActive = pendingComposerFormats.has(format);
             const labels = composerFormatButtonLabels[format];
             button.classList.toggle("tweet-modal__tool-btn--active", isActive);
             if (labels) {
@@ -2435,9 +2437,14 @@ function setupComposerToolbar() {
     });
 
     composerTextarea.addEventListener("input", () => {
-        applyPendingComposerFormatsToContent();
+        const nowHasText = hasComposerText();
 
-        if (!hasComposerText()) {
+        if (composerWasEmpty && nowHasText) {
+            applyPendingComposerFormatsToContent();
+        }
+        composerWasEmpty = !nowHasText;
+
+        if (!nowHasText) {
             pendingComposerFormats = new Set();
         }
 
@@ -2467,6 +2474,22 @@ function setupComposerToolbar() {
     document.addEventListener("selectionchange", () => {
         if (document.activeElement === composerTextarea) {
             saveComposerSelection();
+            if (pendingComposerFormats.size > 0 && hasComposerText()) {
+                const sel = window.getSelection();
+                if (sel?.isCollapsed) {
+                    try {
+                        for (const fmt of ["bold", "italic"]) {
+                            const cmdActive = document.queryCommandState(fmt);
+                            const shouldBeActive = pendingComposerFormats.has(fmt);
+                            if (cmdActive !== shouldBeActive) {
+                                document.execCommand(fmt, false);
+                            }
+                        }
+                    } catch {
+                        // ignore
+                    }
+                }
+            }
             syncFormatButtons();
         }
     });
@@ -2977,6 +3000,56 @@ function setupComposerToolbar() {
         restoreComposerAttachmentsFromDraft;
     composerSection.__closeComposerMediaEditor = closeMediaEditor;
     composerSection.__closeComposerLocationModal = closeLocationModal;
+
+    // 이모티콘 버튼 클릭: 버튼 위치 기준으로 피커를 fixed 배치 후 열기/닫기
+    composerEmojiButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        const isOpen = !composerEmojiPicker.hidden;
+        if (!isOpen) {
+            const rect = composerEmojiButton.getBoundingClientRect();
+            composerEmojiPicker.style.bottom = `${window.innerHeight - rect.top + 4}px`; // 버튼 위로 4px 띄운다
+            composerEmojiPicker.style.left = `${rect.left}px`; // 버튼 왼쪽 가장자리에 맞춘다
+        }
+        composerEmojiPicker.hidden = isOpen;
+        composerEmojiButton.setAttribute("aria-expanded", String(!isOpen));
+    });
+
+    // 이모티콘 항목 클릭: 커서 위치에 이모지 삽입
+    composerEmojiPicker?.addEventListener("click", (event) => {
+        const item = event.target.closest(".tweet-modal__emoji-item");
+        if (!item) return;
+        event.preventDefault();
+        composerTextarea.focus();
+        restoreComposerSelection();
+        document.execCommand("insertText", false, item.textContent);
+        saveComposerSelection();
+        composerEmojiPicker.hidden = true;
+        composerEmojiButton.setAttribute("aria-expanded", "false");
+    });
+
+    // 이모티콘 피커 외부 클릭 시 닫기
+    document.addEventListener("click", (event) => {
+        if (
+            composerEmojiPicker &&
+            !composerEmojiPicker.hidden &&
+            !composerEmojiPicker.contains(event.target) &&
+            !composerEmojiButton?.contains(event.target)
+        ) {
+            composerEmojiPicker.hidden = true;
+            composerEmojiButton?.setAttribute("aria-expanded", "false");
+        }
+    });
+
+    // 상품 등록 버튼 클릭: compose view를 숨기고 판매글 선택 서브뷰를 표시한다
+    composerProductButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        composerSection.__syncComposerSubviewState?.(composerProductModal);
+    });
+
+    // 판매글 선택 뒤로가기: compose view를 복원한다
+    composerProductClose?.addEventListener("click", () => {
+        composerSection.__syncComposerSubviewState?.();
+    });
 }
 
 // 게시글 작성 모달의 임시저장 패널을 담당한다.
@@ -3956,6 +4029,11 @@ function setupReplyModal() {
     const replyMediaPreviewImage = q("[data-media-preview-image]");
     const replyMediaAltInput = q("[data-media-alt-input]");
     const replyMediaAltCount = q("[data-media-alt-count]");
+    const replyEmojiButton = q("[data-testid='replyEmojiButton']"); // 이모티콘 버튼
+    const replyEmojiPicker = q("[data-reply-emoji-picker]"); // 이모티콘 피커 패널
+    const replyProductButton = q("[data-testid='replyProductButton']"); // 상품 등록 버튼
+    const replyProductModal = q("[data-reply-product-modal]"); // 판매글 선택 서브뷰
+    const replyProductClose = replyProductModal?.querySelector("[data-reply-product-close]"); // 판매글 서브뷰 뒤로가기
     const draftButton = q("[data-testid='unsentButton']");
     const draftBackButton = q(".draft-panel__back");
     const draftActionButton = q(".draft-panel__action");
@@ -3976,6 +4054,7 @@ function setupReplyModal() {
     let activeReplyTrigger = null;
     let savedReplySelection = null;
     let pendingReplyFormats = new Set();
+    let replyEditorWasEmpty = true;
     let selectedLocation = null;
     let pendingLocation = null;
     let selectedTaggedUsers = [];
@@ -4001,6 +4080,7 @@ function setupReplyModal() {
         replyTagView,
         replyMediaView,
         draftView,
+        replyProductModal, // 판매글 선택 서브뷰
     ];
 
     function syncReplyModalSubviewState(activeView = null) {
@@ -4112,14 +4192,7 @@ function setupReplyModal() {
             if (!format) {
                 return;
             }
-            let isActive = false;
-            try {
-                isActive = hasReplyEditorText()
-                    ? document.queryCommandState(format)
-                    : pendingReplyFormats.has(format);
-            } catch {
-                isActive = pendingReplyFormats.has(format);
-            }
+            const isActive = pendingReplyFormats.has(format);
             const labels = composerFormatButtonLabels[format];
             button.classList.toggle("tweet-modal__tool-btn--active", isActive);
             if (labels) {
@@ -4136,21 +4209,27 @@ function setupReplyModal() {
             return;
         }
         replyEditor.focus();
-        if (!hasReplyEditorText()) {
-            if (pendingReplyFormats.has(format)) {
-                pendingReplyFormats.delete(format);
-            } else {
-                pendingReplyFormats.add(format);
+        if (pendingReplyFormats.has(format)) {
+            pendingReplyFormats.delete(format);
+        } else {
+            pendingReplyFormats.add(format);
+        }
+        if (hasReplyEditorText()) {
+            if (!restoreReplySelection()) {
+                placeCaretAtEnd(replyEditor);
             }
-            syncReplyFormatButtons();
-            return;
+            try {
+                const cmdActive = document.queryCommandState(format);
+                const shouldBeActive = pendingReplyFormats.has(format);
+                if (cmdActive !== shouldBeActive) {
+                    document.execCommand(format, false);
+                }
+            } catch {
+                // ignore
+            }
+            saveReplySelection();
+            syncReplySubmitState();
         }
-        if (!restoreReplySelection()) {
-            placeCaretAtEnd(replyEditor);
-        }
-        document.execCommand(format, false);
-        saveReplySelection();
-        syncReplySubmitState();
         syncReplyFormatButtons();
     }
 
@@ -4904,6 +4983,7 @@ function setupReplyModal() {
         }
         savedReplySelection = null;
         pendingReplyFormats = new Set();
+        replyEditorWasEmpty = true;
         selectedLocation = null;
         pendingLocation = null;
         resetReplyAttachment();
@@ -5007,8 +5087,12 @@ function setupReplyModal() {
     });
 
     replyEditor?.addEventListener("input", () => {
-        applyPendingReplyFormatsToContent();
-        if (!hasReplyEditorText()) {
+        const nowHasText = hasReplyEditorText();
+        if (replyEditorWasEmpty && nowHasText) {
+            applyPendingReplyFormatsToContent();
+        }
+        replyEditorWasEmpty = !nowHasText;
+        if (!nowHasText) {
             pendingReplyFormats = new Set();
         }
         syncReplySubmitState();
@@ -5037,6 +5121,22 @@ function setupReplyModal() {
             return;
         }
         saveReplySelection();
+        if (pendingReplyFormats.size > 0 && hasReplyEditorText()) {
+            const sel = window.getSelection();
+            if (sel?.isCollapsed) {
+                try {
+                    for (const fmt of ["bold", "italic"]) {
+                        const cmdActive = document.queryCommandState(fmt);
+                        const shouldBeActive = pendingReplyFormats.has(fmt);
+                        if (cmdActive !== shouldBeActive) {
+                            document.execCommand(fmt, false);
+                        }
+                    }
+                } catch {
+                    // ignore
+                }
+            }
+        }
         syncReplyFormatButtons();
     });
 
@@ -5258,6 +5358,56 @@ function setupReplyModal() {
         }
         updateReplyCount(activeReplyTrigger);
         closeReplyModal({ skipConfirm: true });
+    });
+
+    // 이모티콘 버튼 클릭: 버튼 위치 기준으로 피커를 fixed 배치 후 열기/닫기
+    replyEmojiButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        const isOpen = !replyEmojiPicker.hidden;
+        if (!isOpen) {
+            const rect = replyEmojiButton.getBoundingClientRect();
+            replyEmojiPicker.style.bottom = `${window.innerHeight - rect.top + 4}px`; // 버튼 위로 4px 띄운다
+            replyEmojiPicker.style.left = `${rect.left}px`; // 버튼 왼쪽 가장자리에 맞춘다
+        }
+        replyEmojiPicker.hidden = isOpen;
+        replyEmojiButton.setAttribute("aria-expanded", String(!isOpen));
+    });
+
+    // 이모티콘 항목 클릭: 커서 위치에 이모지 삽입
+    replyEmojiPicker?.addEventListener("click", (event) => {
+        const item = event.target.closest(".tweet-modal__emoji-item");
+        if (!item) return;
+        event.preventDefault();
+        replyEditor.focus();
+        restoreReplySelection();
+        document.execCommand("insertText", false, item.textContent);
+        saveReplySelection();
+        replyEmojiPicker.hidden = true;
+        replyEmojiButton.setAttribute("aria-expanded", "false");
+    });
+
+    // 이모티콘 피커 외부 클릭 시 닫기
+    document.addEventListener("click", (event) => {
+        if (
+            replyEmojiPicker &&
+            !replyEmojiPicker.hidden &&
+            !replyEmojiPicker.contains(event.target) &&
+            !replyEmojiButton?.contains(event.target)
+        ) {
+            replyEmojiPicker.hidden = true;
+            replyEmojiButton?.setAttribute("aria-expanded", "false");
+        }
+    });
+
+    // 상품 등록 버튼 클릭: compose view를 숨기고 판매글 선택 서브뷰를 표시한다
+    replyProductButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        replyModalOverlay.__syncReplyModalSubviewState?.(replyProductModal);
+    });
+
+    // 판매글 선택 뒤로가기: compose view를 복원한다
+    replyProductClose?.addEventListener("click", () => {
+        replyModalOverlay.__syncReplyModalSubviewState?.();
     });
 
 }

@@ -1,35 +1,3 @@
-function parseTwemoji(scope) {
-    if (!scope || !window.twemoji) {
-        return;
-    }
-
-    window.twemoji.parse(scope, { folder: "svg", ext: ".svg" });
-}
-
-const composerFormatButtonLabels = {
-    bold: {
-        inactive: "굵게, (CTRL+B) 님",
-        active: "굵게 취소, (CTRL+B) 님",
-    },
-    italic: {
-        inactive: "기울임꼴, (CTRL+I) 님",
-        active: "기울임꼴 취소, (CTRL+I) 님",
-    },
-};
-
-const composerFormatStyleMap = {
-    bold: {
-        style: "fontWeight",
-        value: "bold",
-        tagNames: ["B", "STRONG"],
-    },
-    italic: {
-        style: "fontStyle",
-        value: "italic",
-        tagNames: ["I", "EM"],
-    },
-};
-
 const composerEmojiCategoryMeta = {
     recent: {
         label: "최근",
@@ -258,6 +226,7 @@ function setupInlineReplyComposer() {
     const fileInput = q("[data-testid='fileInput']");
     const attachmentPreview = q("[data-attachment-preview]");
     const attachmentMedia = q("[data-attachment-media]");
+    const attachmentMetaButtons = qAll(".tweet-modal__attachment-meta-btn");
     const geoButton = q("[data-testid='geoButton']");
     const geoButtonPath = geoButton?.querySelector("path");
     const locationView = q(".tweet-modal__location-view");
@@ -269,7 +238,6 @@ function setupInlineReplyComposer() {
     const locationName = q("[data-location-name]");
     const locationDeleteButton = q("[data-location-delete]");
     const locationCompleteButton = q("[data-location-complete]");
-    const formatButtons = qAll("[data-format]");
     const submitButton = q("[data-testid='tweetButton']");
     const gauge = q("#replyGauge");
     const gaugeText = q("#replyGaugeText");
@@ -280,23 +248,19 @@ function setupInlineReplyComposer() {
     let activeEmojiCategory = "recent";
     let selectedLocation = null;
     let pendingLocation = null;
-    let savedSelection = null;
     let attachedFiles = [];
     let attachmentPreviewUrls = [];
-    let pendingFormats = new Set();
-
-    function setFocusedState(nextFocused) {
-        composer.classList.toggle("is-focused", nextFocused);
-        if (footerBottom) {
-            footerBottom.hidden = !nextFocused;
-        }
-        if (context) {
-            context.hidden = !nextFocused;
-        }
-    }
+    let savedSelection = null;
 
     function getEditorLength() {
         return editor?.textContent?.replace(/\u00a0/g, " ").trim().length ?? 0;
+    }
+
+    function resetEditorIfEmpty() {
+        if (!editor || getEditorLength() > 0) {
+            return;
+        }
+        editor.innerHTML = "";
     }
 
     function getRecentEmojis() {
@@ -349,6 +313,28 @@ function setupInlineReplyComposer() {
         }
     }
 
+    function hasDraftContent() {
+        return (
+            getEditorLength() > 0 ||
+            attachedFiles.length > 0 ||
+            Boolean(selectedLocation)
+        );
+    }
+
+    function setExpanded() {
+        composer.classList.toggle("has-draft", hasDraftContent());
+        if (footerBottom) {
+            footerBottom.hidden = false;
+        }
+        if (context) {
+            context.hidden = false;
+        }
+    }
+
+    function syncExpandedState() {
+        setExpanded();
+    }
+
     function saveEditorSelection() {
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0 || !editor) {
@@ -386,231 +372,25 @@ function setupInlineReplyComposer() {
         saveEditorSelection();
     }
 
-    function placeCaretAfterNode(node) {
-        const range = document.createRange();
-        range.setStartAfter(node);
-        range.collapse(true);
-        const selection = window.getSelection();
-        selection?.removeAllRanges();
-        selection?.addRange(range);
-        saveEditorSelection();
-    }
-
-    function getFormatConfig(format) {
-        return composerFormatStyleMap[format] ?? null;
-    }
-
-    function applyFormatStyles(element, formats) {
-        const nextFormats = formats ?? pendingFormats;
-        element.style.fontWeight = nextFormats.has("bold") ? "bold" : "";
-        element.style.fontStyle = nextFormats.has("italic") ? "italic" : "";
-        if (!element.style.fontWeight && !element.style.fontStyle) {
-            element.removeAttribute("style");
-        }
-    }
-
-    function getFormattedAncestor(node, format) {
-        const config = getFormatConfig(format);
-        if (!config) {
-            return null;
-        }
-
-        let current =
-            node?.nodeType === Node.TEXT_NODE ? node.parentElement : node;
-        while (current && current !== editor) {
-            if (
-                config.tagNames.includes(current.tagName) ||
-                current.style?.[config.style] === config.value
-            ) {
-                return current;
-            }
-            current = current.parentElement;
-        }
-
-        return null;
-    }
-
-    function getActiveEditorRange() {
-        if (!editor) {
-            return null;
-        }
-
-        const selection = window.getSelection();
-        if (selection?.rangeCount) {
-            const range = selection.getRangeAt(0);
-            if (editor.contains(range.commonAncestorContainer)) {
-                return range;
-            }
-        }
-
-        placeCaretAtEnd();
-        return window.getSelection()?.rangeCount
-            ? window.getSelection().getRangeAt(0)
-            : null;
-    }
-
-    function selectionHasFormat(format) {
-        const range = getActiveEditorRange();
-        if (!range) {
-            return pendingFormats.has(format);
-        }
-
-        const startFormatted = Boolean(
-            getFormattedAncestor(range.startContainer, format),
-        );
-        const endFormatted = Boolean(
-            getFormattedAncestor(range.endContainer, format),
-        );
-
-        return range.collapsed
-            ? startFormatted || pendingFormats.has(format)
-            : startFormatted && endFormatted;
-    }
-
-    function unwrapFormatElement(element, format) {
-        const config = getFormatConfig(format);
-        if (!element || !config) {
-            return;
-        }
-
-        if (config.tagNames.includes(element.tagName)) {
-            const parent = element.parentNode;
-            while (element.firstChild) {
-                parent?.insertBefore(element.firstChild, element);
-            }
-            element.remove();
-            return;
-        }
-
-        element.style[config.style] = "";
-        if (!element.style.fontWeight && !element.style.fontStyle) {
-            element.removeAttribute("style");
-        }
-        if (element.tagName === "SPAN" && !element.getAttribute("style")) {
-            const parent = element.parentNode;
-            while (element.firstChild) {
-                parent?.insertBefore(element.firstChild, element);
-            }
-            element.remove();
-        }
-    }
-
-    function wrapRangeWithFormat(range, format) {
-        const fragment = range.extractContents();
-        const span = document.createElement("span");
-        applyFormatStyles(span, new Set([format]));
-        span.appendChild(fragment);
-        range.insertNode(span);
-        placeCaretAfterNode(span);
-        editor?.normalize();
-    }
-
     function insertNodeAtSelection(node) {
         if (!editor) {
             return;
         }
-
-        const range = getActiveEditorRange();
-        if (!range) {
+        const selection = window.getSelection();
+        if (!selection?.rangeCount) {
+            placeCaretAtEnd();
+        }
+        const range = window.getSelection()?.rangeCount
+            ? window.getSelection().getRangeAt(0)
+            : null;
+        if (!range || !editor.contains(range.commonAncestorContainer)) {
             return;
         }
 
         range.deleteContents();
         range.insertNode(node);
-        placeCaretAfterNode(node);
-    }
-
-    function syncFormatButtonState() {
-        formatButtons.forEach((button) => {
-            const format = button.getAttribute("data-format");
-            if (!format) {
-                return;
-            }
-            const labels = composerFormatButtonLabels[format];
-            const isActive =
-                getEditorLength() > 0
-                    ? selectionHasFormat(format)
-                    : pendingFormats.has(format);
-            button.classList.toggle("tweet-modal__tool-btn--active", isActive);
-            if (labels) {
-                button.setAttribute(
-                    "aria-label",
-                    isActive ? labels.active : labels.inactive,
-                );
-            }
-        });
-    }
-
-    function applyFormat(format) {
-        if (!editor) {
-            return;
-        }
-        editor.focus();
-        if (getEditorLength() === 0) {
-            if (pendingFormats.has(format)) {
-                pendingFormats.delete(format);
-            } else {
-                pendingFormats.add(format);
-            }
-            syncFormatButtonState();
-            return;
-        }
-
-        editor.focus();
-        if (!restoreEditorSelection()) {
-            placeCaretAtEnd();
-        }
-
-        const range = getActiveEditorRange();
-        if (!range || range.collapsed) {
-            if (pendingFormats.has(format)) {
-                pendingFormats.delete(format);
-            } else {
-                pendingFormats.add(format);
-            }
-            syncFormatButtonState();
-            return;
-        }
-
-        const startFormatted = getFormattedAncestor(range.startContainer, format);
-        const endFormatted = getFormattedAncestor(range.endContainer, format);
-        if (startFormatted && startFormatted === endFormatted) {
-            unwrapFormatElement(startFormatted, format);
-            placeCaretAtEnd();
-        } else {
-            wrapRangeWithFormat(range, format);
-        }
-
-        syncFormatButtonState();
-        syncInlineReplySubmitState();
-    }
-
-    function applyPendingFormatsToContent() {
-        if (!editor || pendingFormats.size === 0 || getEditorLength() === 0) {
-            return;
-        }
-
-        let span = null;
-        if (
-            editor.childNodes.length === 1 &&
-            editor.firstElementChild?.tagName === "SPAN"
-        ) {
-            span = editor.firstElementChild;
-        } else {
-            span = document.createElement("span");
-            while (editor.firstChild) {
-                span.appendChild(editor.firstChild);
-            }
-            editor.appendChild(span);
-        }
-
-        span.style.fontWeight = pendingFormats.has("bold") ? "bold" : "";
-        span.style.fontStyle = pendingFormats.has("italic") ? "italic" : "";
-
-        const range = document.createRange();
-        range.selectNodeContents(span);
-        range.collapse(false);
-        const selection = window.getSelection();
+        range.setStartAfter(node);
+        range.collapse(true);
         selection?.removeAllRanges();
         selection?.addRange(range);
         saveEditorSelection();
@@ -665,8 +445,6 @@ function setupInlineReplyComposer() {
                 tab.innerHTML = meta.icon;
             }
         });
-
-        parseTwemoji(emojiPicker);
     }
 
     function renderInlineReplyEmojiPicker() {
@@ -700,7 +478,6 @@ function setupInlineReplyComposer() {
                     emptyText: "일치하는 이모티콘이 없습니다.",
                 });
             renderEmojiTabs();
-            parseTwemoji(emojiContent);
             return;
         }
 
@@ -727,24 +504,6 @@ function setupInlineReplyComposer() {
         }
 
         renderEmojiTabs();
-        parseTwemoji(emojiContent);
-    }
-
-    function updateEmojiPickerPosition() {
-        if (!emojiPicker || !emojiButton) {
-            return;
-        }
-
-        const rect = emojiButton.getBoundingClientRect();
-        const pickerWidth = Math.min(565, window.innerWidth - 32);
-        const maxLeft = Math.max(16, window.innerWidth - pickerWidth - 16);
-        const left = Math.min(Math.max(16, rect.left), maxLeft);
-        const top = rect.bottom + 8;
-        const maxHeight = Math.max(220, window.innerHeight - top - 16);
-
-        emojiPicker.style.left = `${left}px`;
-        emojiPicker.style.top = `${top}px`;
-        emojiPicker.style.maxHeight = `${maxHeight}px`;
     }
 
     function openEmojiPicker() {
@@ -755,7 +514,6 @@ function setupInlineReplyComposer() {
         renderInlineReplyEmojiPicker();
         emojiPicker.hidden = false;
         emojiButton.setAttribute("aria-expanded", "true");
-        updateEmojiPickerPosition();
     }
 
     function closeEmojiPicker() {
@@ -797,22 +555,11 @@ function setupInlineReplyComposer() {
         if (!restoreEditorSelection()) {
             placeCaretAtEnd();
         }
-
-        const textNode =
-            pendingFormats.size > 0
-                ? (() => {
-                      const span = document.createElement("span");
-                      applyFormatStyles(span);
-                      span.textContent = emoji;
-                      return span;
-                  })()
-                : document.createTextNode(emoji);
-        insertNodeAtSelection(textNode);
+        insertNodeAtSelection(document.createTextNode(emoji));
 
         saveRecentEmoji(emoji);
         saveEditorSelection();
         syncInlineReplySubmitState();
-        syncFormatButtonState();
         renderInlineReplyEmojiPicker();
     }
 
@@ -823,29 +570,56 @@ function setupInlineReplyComposer() {
         attachmentPreviewUrls = [];
     }
 
+    function escapeAttachmentText(value) {
+        return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;");
+    }
+
+    function buildAttachmentCell(file, index, className) {
+        const fileUrl = attachmentPreviewUrls[index] || "";
+        const safeUrl = escapeAttachmentText(fileUrl);
+        const safeName = escapeAttachmentText(file.name);
+        const mediaMarkup = file.type.startsWith("image/")
+            ? `<img class="media-img" src="${safeUrl}" alt="${safeName}">`
+            : `<video class="tweet-modal__attachment-video" controls preload="metadata"><source src="${safeUrl}" type="${file.type}"></video>`;
+        const background = file.type.startsWith("image/")
+            ? `<div class="media-bg" style="background-image:url('${safeUrl}')"></div>`
+            : "";
+
+        return `<div class="media-cell ${className}"><div class="media-cell-inner"><div class="media-img-container">${background}${mediaMarkup}</div><button type="button" class="media-btn-delete" data-attachment-remove-index="${index}" aria-label="첨부 삭제"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.59 12 4.54 5.96l1.42-1.42L12 10.59l6.04-6.05 1.42 1.42L13.41 12l6.05 6.04-1.42 1.42L12 13.41l-6.04 6.05-1.42-1.42L10.59 12z"></path></svg></button></div></div>`;
+    }
+
+    function buildAttachmentLayout() {
+        if (attachedFiles.length === 0) {
+            return "";
+        }
+        if (attachedFiles.length === 1) {
+            return `<div class="media-aspect-ratio media-aspect-ratio--single"><div class="media-absolute-layer">${buildAttachmentCell(attachedFiles[0], 0, "media-cell--single")}</div></div>`;
+        }
+        if (attachedFiles.length === 2) {
+            return `<div class="media-aspect-ratio"><div class="media-absolute-layer"><div class="media-row">${buildAttachmentCell(attachedFiles[0], 0, "media-cell--left")}${buildAttachmentCell(attachedFiles[1], 1, "media-cell--right")}</div></div></div>`;
+        }
+        if (attachedFiles.length === 3) {
+            return `<div class="media-aspect-ratio"><div class="media-absolute-layer"><div class="media-row">${buildAttachmentCell(attachedFiles[0], 0, "media-cell--left-tall")}<div class="media-col">${buildAttachmentCell(attachedFiles[1], 1, "media-cell--right-top")}${buildAttachmentCell(attachedFiles[2], 2, "media-cell--right-bottom")}</div></div></div></div>`;
+        }
+        return `<div class="media-aspect-ratio"><div class="media-absolute-layer"><div class="media-row"><div class="media-col">${buildAttachmentCell(attachedFiles[0], 0, "media-cell--top-left")}${buildAttachmentCell(attachedFiles[2], 2, "media-cell--bottom-left")}</div><div class="media-col">${buildAttachmentCell(attachedFiles[1], 1, "media-cell--top-right")}${buildAttachmentCell(attachedFiles[3], 3, "media-cell--bottom-right")}</div></div></div></div>`;
+    }
+
     function renderAttachments() {
         if (!attachmentPreview || !attachmentMedia || !mediaUploadButton) {
             return;
         }
 
         attachmentPreview.hidden = attachedFiles.length === 0;
-        attachmentMedia.innerHTML = attachedFiles
-            .map((file, index) => {
-                const fileUrl = attachmentPreviewUrls[index] || "";
-                const mediaMarkup = file.type.startsWith("image/")
-                    ? `<img src="${fileUrl}" alt="${file.name}">`
-                    : file.type.startsWith("video/")
-                      ? `<video controls preload="metadata"><source src="${fileUrl}" type="${file.type}"></video>`
-                      : `<div class="post-detail-inline-reply-attachment-file"><span>${file.name}</span></div>`;
-                const className =
-                    file.type.startsWith("image/") ||
-                    file.type.startsWith("video/")
-                        ? "post-detail-inline-reply-attachment-item"
-                        : "";
-                return `<div class="${className}" data-attachment-index="${index}">${mediaMarkup}<button type="button" class="post-detail-inline-reply-attachment-remove" data-attachment-remove-index="${index}" aria-label="첨부 삭제">✕</button></div>`;
-            })
-            .join("");
+        attachmentMedia.innerHTML = buildAttachmentLayout();
+        attachmentMetaButtons.forEach((button) => {
+            button.hidden = attachedFiles.length === 0;
+        });
         mediaUploadButton.disabled = attachedFiles.length >= maxAttachments;
+        composer.classList.toggle("has-draft", hasDraftContent());
         syncInlineReplySubmitState();
     }
 
@@ -860,6 +634,7 @@ function setupInlineReplyComposer() {
 
     function syncLocationUI() {
         const hasLocation = Boolean(selectedLocation);
+        composer.classList.toggle("has-draft", hasDraftContent());
         if (locationDisplay) {
             locationDisplay.hidden = !hasLocation;
         }
@@ -931,46 +706,29 @@ function setupInlineReplyComposer() {
         renderInlineReplyLocationList();
     }
 
-    setFocusedState(false);
+    setExpanded();
     syncInlineReplySubmitState();
     syncLocationUI();
     renderInlineReplyEmojiPicker();
 
-    editor?.addEventListener("focus", () => {
-        setFocusedState(true);
-    });
-
     editor?.addEventListener("input", () => {
-        applyPendingFormatsToContent();
+        resetEditorIfEmpty();
         saveEditorSelection();
-        if (getEditorLength() === 0) {
-            pendingFormats = new Set();
-        }
+        composer.classList.toggle("has-draft", hasDraftContent());
         syncInlineReplySubmitState();
-        syncFormatButtonState();
     });
 
-    editor?.addEventListener("keyup", () => {
-        saveEditorSelection();
-        syncFormatButtonState();
-    });
-
+    editor?.addEventListener("keyup", saveEditorSelection);
     editor?.addEventListener("mouseup", saveEditorSelection);
 
     composer.addEventListener("focusin", () => {
-        setFocusedState(true);
+        setExpanded();
     });
 
     composer.addEventListener("focusout", () => {
         window.setTimeout(() => {
-            const activeElement = document.activeElement;
-            const shouldStayFocused =
-                Boolean(activeElement) && composer.contains(activeElement);
-            if (!shouldStayFocused) {
-                setFocusedState(false);
-                toggleEmojiPicker(false);
-                toggleLocationPanel(false);
-            }
+            resetEditorIfEmpty();
+            syncExpandedState();
         }, 0);
     });
 
@@ -1103,15 +861,6 @@ function setupInlineReplyComposer() {
         syncLocationUI();
     });
 
-    formatButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-            const format = button.getAttribute("data-format");
-            if (format) {
-                applyFormat(format);
-            }
-        });
-    });
-
     gifButton?.addEventListener("click", (event) => {
         event.preventDefault();
     });
@@ -1130,44 +879,60 @@ function setupInlineReplyComposer() {
         syncInlineReplySubmitState();
         toggleEmojiPicker(false);
         toggleLocationPanel(false);
+        resetEditorIfEmpty();
         placeCaretAtEnd();
+        setExpanded();
     });
 
     document.addEventListener("click", (event) => {
         if (!composer.contains(event.target)) {
             toggleEmojiPicker(false);
             toggleLocationPanel(false);
+            syncExpandedState();
         }
     });
-    window.addEventListener("resize", () => {
-        if (emojiPicker && !emojiPicker.hidden) {
-            updateEmojiPickerPosition();
-        }
-    });
-    window.addEventListener(
-        "scroll",
-        () => {
-            if (emojiPicker && !emojiPicker.hidden) {
-                updateEmojiPickerPosition();
-            }
-        },
-        { passive: true },
-    );
     window.addEventListener("beforeunload", revokeAttachmentPreviewUrls);
 }
 
 // 메인 피드의 게시글 액션 중 상세 화면에 필요한 최소 동작만 옮긴다.
 function setupPostDetailActions() {
     const layersRoot = document.getElementById("layers");
+    const moreDropdown = document.getElementById("postDetailMoreDropdown");
+    const moreMenu = document.getElementById("postDetailMoreMenu");
+    const moreFollowButton = document.getElementById("postDetailMoreFollow");
+    const moreFollowLabel = document.getElementById(
+        "postDetailMoreFollowLabel",
+    );
+    const moreFollowIconPath = document.getElementById(
+        "postDetailMoreFollowIconPath",
+    );
+    const moreBlockButton = document.getElementById("postDetailMoreBlock");
+    const moreBlockLabel = document.getElementById("postDetailMoreBlockLabel");
+    const moreReportButton = document.getElementById("postDetailMoreReport");
+    const moreToast = document.getElementById("postDetailMoreToast");
+    const blockDialog = document.getElementById("postDetailBlockDialog");
+    const blockTitle = document.getElementById("postDetailBlockTitle");
+    const blockDesc = document.getElementById("postDetailBlockDesc");
+    const reportDialog = document.getElementById("postDetailReportDialog");
     let activeShareDropdown = null;
     let activeShareButton = null;
     let activeShareToast = null;
     let activeShareToastTimer = null;
     let activeShareModal = null;
+    let activeMoreButton = null;
+    let activeMoreMeta = null;
+    let moreToastTimer = null;
+    const moreFollowState = new Map();
     const shareMenuIcons = {
         copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18.36 5.64c-1.95-1.96-5.11-1.96-7.07 0L9.88 7.05 8.46 5.64l1.42-1.42c2.73-2.73 7.16-2.73 9.9 0 2.73 2.74 2.73 7.17 0 9.9l-1.42 1.42-1.41-1.42 1.41-1.41c1.96-1.96 1.96-5.12 0-7.07zm-2.12 3.53l-7.07 7.07-1.41-1.41 7.07-7.07 1.41 1.41zm-12.02.71l1.42-1.42 1.41 1.42-1.41 1.41c-1.96 1.96-1.96 5.12 0 7.07 1.95 1.96 5.11 1.96 7.07 0l1.41-1.41 1.42 1.41-1.42 1.42c-2.73 2.73-7.16 2.73-9.9 0-2.73-2.74-2.73-7.17 0-9.9z"></path></g></svg>',
         chat: '<svg viewBox="0 0 24 24" aria-hidden="true"><g><path d="M1.998 5.5c0-1.381 1.119-2.5 2.5-2.5h15c1.381 0 2.5 1.119 2.5 2.5v13c0 1.381-1.119 2.5-2.5 2.5h-15c-1.381 0-2.5-1.119-2.5-2.5v-13zm2.5-.5c-.276 0-.5.224-.5.5v2.764l8 3.638 8-3.636V5.5c0-.276-.224-.5-.5-.5h-15zm15.5 5.463l-8 3.636-8-3.638V18.5c0 .276.224.5.5.5h15c.276 0 .5-.224.5-.5v-8.037z"></path></g></svg>',
-        bookmark: '<svg viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18 3V0h2v3h3v2h-3v3h-2V5h-3V3zm-7.5 1a.5.5 0 00-.5.5V7h3.5A2.5 2.5 0 0116 9.5v3.48l3 2.1V11h2v7.92l-5-3.5v7.26l-6.5-3.54L3 22.68V9.5A2.5 2.5 0 015.5 7H8V4.5A2.5 2.5 0 0110.5 2H12v2zm-5 5a.5.5 0 00-.5.5v9.82l4.5-2.46 4.5 2.46V9.5a.5.5 0 00-.5-.5z"></path></g></svg>',
+        bookmark:
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18 3V0h2v3h3v2h-3v3h-2V5h-3V3zm-7.5 1a.5.5 0 00-.5.5V7h3.5A2.5 2.5 0 0116 9.5v3.48l3 2.1V11h2v7.92l-5-3.5v7.26l-6.5-3.54L3 22.68V9.5A2.5 2.5 0 015.5 7H8V4.5A2.5 2.5 0 0110.5 2H12v2zm-5 5a.5.5 0 00-.5.5v9.82l4.5-2.46 4.5 2.46V9.5a.5.5 0 00-.5-.5z"></path></g></svg>',
+    };
+    const moreIcons = {
+        follow: "M10 4c-1.105 0-2 .9-2 2s.895 2 2 2 2-.9 2-2-.895-2-2-2zM6 6c0-2.21 1.791-4 4-4s4 1.79 4 4-1.791 4-4 4-4-1.79-4-4zm4 7c-3.053 0-5.563 1.193-7.443 3.596l1.548 1.207C5.573 15.922 7.541 15 10 15s4.427.922 5.895 2.803l1.548-1.207C15.563 14.193 13.053 13 10 13zm8-6V5h-3V3h-2v2h-3v2h3v3h2V7h3z",
+        unfollow:
+            "M10 4c-1.105 0-2 .9-2 2s.895 2 2 2 2-.9 2-2-.895-2-2-2zM6 6c0-2.21 1.791-4 4-4s4 1.79 4 4-1.791 4-4 4-4-1.79-4-4zm12.586 3l-2.043-2.04 1.414-1.42L20 7.59l2.043-2.05 1.414 1.42L21.414 9l2.043 2.04-1.414 1.42L20 10.41l-2.043 2.05-1.414-1.42L18.586 9zM3.651 19h12.698c-.337-1.8-1.023-3.21-1.945-4.19C13.318 13.65 11.838 13 10 13s-3.317.65-4.404 1.81c-.922.98-1.608 2.39-1.945 4.19zm.486-5.56C5.627 11.85 7.648 11 10 11s4.373.85 5.863 2.44c1.477 1.58 2.366 3.8 2.632 6.46l.11 1.1H1.395l.11-1.1c.266-2.66 1.155-4.88 2.632-6.46z",
     };
 
     function escapeHtml(value) {
@@ -1181,6 +946,15 @@ function setupPostDetailActions() {
                     '"': "&quot;",
                     "'": "&#39;",
                 })[char] ?? char,
+        );
+    }
+
+    function syncBodyModalLock() {
+        document.body.classList.toggle(
+            "modal-open",
+            Boolean(activeShareModal) ||
+                blockDialog?.hidden === false ||
+                reportDialog?.hidden === false,
         );
     }
 
@@ -1265,7 +1039,7 @@ function setupPostDetailActions() {
 
         activeShareModal.remove();
         activeShareModal = null;
-        document.body.classList.remove("modal-open");
+        syncBodyModalLock();
     }
 
     // 공유 드롭다운은 하나만 열리도록 유지하고 열림 상태도 같이 정리한다.
@@ -1364,24 +1138,127 @@ function setupPostDetailActions() {
         modal.addEventListener("click", onClick);
 
         document.body.appendChild(modal);
-        document.body.classList.add("modal-open");
         activeShareModal = modal;
+        syncBodyModalLock();
         return modal;
+    }
+
+    function getMoreMeta(button) {
+        const postCard = button.closest(".postCard, [data-post-card]");
+        const handle =
+            postCard?.querySelector(".postHandle")?.textContent?.trim() ||
+            "@user";
+        return { button, handle };
+    }
+
+    function closeMoreDropdown() {
+        if (!moreDropdown) {
+            return;
+        }
+        moreDropdown.hidden = true;
+        moreMenu?.style.removeProperty("top");
+        moreMenu?.style.removeProperty("left");
+        activeMoreButton?.setAttribute("aria-expanded", "false");
+        activeMoreButton = null;
+        activeMoreMeta = null;
+    }
+
+    function showMoreToast(message) {
+        if (!moreToast) {
+            return;
+        }
+        moreToast.textContent = message;
+        moreToast.hidden = false;
+        window.clearTimeout(moreToastTimer);
+        moreToastTimer = window.setTimeout(() => {
+            moreToast.hidden = true;
+        }, 3000);
+    }
+
+    function closeMoreDialog() {
+        if (blockDialog) {
+            blockDialog.hidden = true;
+        }
+        if (reportDialog) {
+            reportDialog.hidden = true;
+        }
+        syncBodyModalLock();
+    }
+
+    function openBlockDialog(meta) {
+        if (!blockDialog || !blockTitle || !blockDesc) {
+            return;
+        }
+        closeMoreDropdown();
+        activeMoreMeta = meta;
+        blockTitle.textContent = `${meta.handle} 님을 차단할까요?`;
+        blockDesc.textContent = `내 공개 게시물을 볼 수 있지만 더 이상 게시물에 참여할 수 없습니다. 또한 ${meta.handle} 님은 나를 팔로우하거나 쪽지를 보낼 수 없으며, 이 계정과 관련된 알림도 내게 표시되지 않습니다.`;
+        blockDialog.hidden = false;
+        syncBodyModalLock();
+    }
+
+    function openReportDialog(meta) {
+        if (!reportDialog) {
+            return;
+        }
+        closeMoreDropdown();
+        activeMoreMeta = meta;
+        reportDialog.hidden = false;
+        syncBodyModalLock();
+    }
+
+    function openMoreDropdown(button) {
+        if (!moreDropdown || !moreMenu) {
+            return;
+        }
+        const meta = getMoreMeta(button);
+        const isFollowing = moreFollowState.get(meta.handle) ?? false;
+        const rect = button.getBoundingClientRect();
+        const menuRect = moreMenu.getBoundingClientRect();
+        const top = Math.min(
+            rect.bottom + 8,
+            window.innerHeight - menuRect.height - 16,
+        );
+        const left = Math.min(
+            Math.max(16, rect.right - Math.max(menuRect.width, 240)),
+            window.innerWidth - Math.max(menuRect.width, 240) - 16,
+        );
+        if (moreFollowLabel) {
+            moreFollowLabel.textContent = isFollowing
+                ? `${meta.handle} 님 언팔로우하기`
+                : `${meta.handle} 님 팔로우하기`;
+        }
+        if (moreBlockLabel) {
+            moreBlockLabel.textContent = `${meta.handle} 님 차단하기`;
+        }
+        if (moreFollowIconPath) {
+            moreFollowIconPath.setAttribute(
+                "d",
+                isFollowing ? moreIcons.unfollow : moreIcons.follow,
+            );
+        }
+        closeMoreDropdown();
+        activeMoreButton = button;
+        activeMoreMeta = meta;
+        moreDropdown.hidden = false;
+        moreMenu.style.top = `${top}px`;
+        moreMenu.style.left = `${left}px`;
+        button.setAttribute("aria-expanded", "true");
     }
 
     function openShareChatModal() {
         openShareModal(
             `<div class="share-sheet__backdrop" data-share-close="true"></div><div class="share-sheet__card" role="dialog" aria-modal="true" aria-labelledby="share-chat-title"><div class="share-sheet__header"><button type="button" class="share-sheet__icon-btn" data-share-close="true" aria-label="돌아가기"><svg viewBox="0 0 24 24" aria-hidden="true"><g><path d="M7.414 13l5.043 5.04-1.414 1.42L3.586 12l7.457-7.46 1.414 1.42L7.414 11H21v2H7.414z"></path></g></svg></button><h2 id="share-chat-title" class="share-sheet__title">공유하기</h2><span class="share-sheet__header-spacer"></span></div><div class="share-sheet__search"><input type="text" class="share-sheet__search-input" placeholder="검색" aria-label="검색" /></div><div class="share-sheet__list">${getShareUserRows()}</div></div>`,
             (e) => {
-            if (
-                e.target.closest("[data-share-close='true']") ||
-                e.target.classList.contains("share-sheet__backdrop") ||
-                e.target.closest(".share-sheet__user")
-            ) {
-                e.preventDefault();
-                closeShareModal();
-            }
-        },
+                if (
+                    e.target.closest("[data-share-close='true']") ||
+                    e.target.classList.contains("share-sheet__backdrop") ||
+                    e.target.closest(".share-sheet__user")
+                ) {
+                    e.preventDefault();
+                    closeShareModal();
+                }
+            },
         );
     }
 
@@ -1419,27 +1296,29 @@ function setupPostDetailActions() {
             </div>
         `,
             (event) => {
-            if (
-                event.target.closest("[data-share-close='true']") ||
-                event.target.classList.contains("share-sheet__backdrop")
-            ) {
-                event.preventDefault();
-                closeShareModal();
-                return;
-            }
+                if (
+                    event.target.closest("[data-share-close='true']") ||
+                    event.target.classList.contains("share-sheet__backdrop")
+                ) {
+                    event.preventDefault();
+                    closeShareModal();
+                    return;
+                }
 
-            if (event.target.closest(".share-sheet__create-folder")) {
-                event.preventDefault();
-                closeShareModal();
-                return;
-            }
+                if (event.target.closest(".share-sheet__create-folder")) {
+                    event.preventDefault();
+                    closeShareModal();
+                    return;
+                }
 
-            if (event.target.closest("[data-share-folder='all-bookmarks']")) {
-                event.preventDefault();
-                setBookmarkButtonState(bookmarkButton, !isBookmarked);
-                closeShareModal();
-            }
-        },
+                if (
+                    event.target.closest("[data-share-folder='all-bookmarks']")
+                ) {
+                    event.preventDefault();
+                    setBookmarkButtonState(bookmarkButton, !isBookmarked);
+                    closeShareModal();
+                }
+            },
         );
     }
 
@@ -1561,6 +1440,65 @@ function setupPostDetailActions() {
         });
     });
 
+    document.querySelectorAll(".post-detail-more-trigger").forEach((button) => {
+        button.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (activeMoreButton === button && moreDropdown?.hidden === false) {
+                closeMoreDropdown();
+                return;
+            }
+            openMoreDropdown(button);
+        });
+    });
+
+    moreFollowButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (!activeMoreMeta) {
+            return;
+        }
+        const handle = activeMoreMeta.handle;
+        const isFollowing = moreFollowState.get(handle) ?? false;
+        moreFollowState.set(handle, !isFollowing);
+        closeMoreDropdown();
+        if (!isFollowing) {
+            showMoreToast(`${handle} 님을 팔로우함`);
+        }
+    });
+
+    moreBlockButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (activeMoreMeta) {
+            openBlockDialog(activeMoreMeta);
+        }
+    });
+
+    moreReportButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (activeMoreMeta) {
+            openReportDialog(activeMoreMeta);
+        }
+    });
+
+    blockDialog?.addEventListener("click", (event) => {
+        if (event.target.closest("[data-post-detail-block-close='true']")) {
+            closeMoreDialog();
+            return;
+        }
+        if (event.target.closest("[data-post-detail-block-confirm='true']")) {
+            closeMoreDialog();
+        }
+    });
+
+    reportDialog?.addEventListener("click", (event) => {
+        if (
+            event.target.closest("[data-post-detail-report-close='true']") ||
+            event.target.closest(".post-detail-notification-report__item")
+        ) {
+            closeMoreDialog();
+        }
+    });
+
     document
         .querySelectorAll(".tweet-action-btn[data-testid='reply']")
         .forEach((button) => {
@@ -1570,6 +1508,14 @@ function setupPostDetailActions() {
         });
 
     document.addEventListener("click", (event) => {
+        if (
+            moreDropdown &&
+            !moreDropdown.hidden &&
+            !moreDropdown.contains(event.target) &&
+            !activeMoreButton?.contains(event.target)
+        ) {
+            closeMoreDropdown();
+        }
         if (
             activeShareDropdown &&
             !activeShareDropdown.contains(event.target) &&
@@ -1582,6 +1528,7 @@ function setupPostDetailActions() {
     window.addEventListener(
         "scroll",
         () => {
+            closeMoreDropdown();
             closeShareDropdown();
         },
         { passive: true },
@@ -1589,6 +1536,8 @@ function setupPostDetailActions() {
 
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
+            closeMoreDialog();
+            closeMoreDropdown();
             closeShareModal();
             closeShareDropdown();
         }
