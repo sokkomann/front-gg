@@ -146,35 +146,46 @@ if (trendReportMenu) {
 
 // 7. Post-Card 인터랙션 (Like / Bookmark / 이미지 프리뷰)
 (function () {
+    // Toast 알림
+    function showToast(message, extraClass) {
+        const toast = document.createElement("div");
+        toast.className = "toast" + (extraClass ? " " + extraClass : "");
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(function () { toast.remove(); }, 2500);
+    }
+
     // Like 토글
     function handleLike(btn) {
-        var isLiked = btn.classList.contains("liked");
+        const isLiked = btn.classList.contains("liked");
         btn.classList.toggle("liked", !isLiked);
-        var path = btn.querySelector("svg path");
+        const path = btn.querySelector("svg path");
         if (path) {
             path.setAttribute("d", isLiked ? path.getAttribute("data-path-inactive") : path.getAttribute("data-path-active"));
         }
-        var countEl = btn.querySelector(".Post-Action-Count");
+        const countEl = btn.querySelector(".Post-Action-Count");
         if (countEl) {
-            var cur = parseInt(countEl.textContent.replace(/[^0-9]/g, ""), 10) || 0;
+            const cur = parseInt(countEl.textContent.replace(/[^0-9]/g, ""), 10) || 0;
             countEl.textContent = isLiked ? cur - 1 : cur + 1;
         }
+        showToast(isLiked ? "좋아요를 취소했습니다." : "좋아요를 눌렀습니다.", "toast--like");
     }
 
     // Bookmark 토글
     function handleBookmark(btn) {
-        var isBookmarked = btn.classList.contains("bookmarked");
+        const isBookmarked = btn.classList.contains("bookmarked");
         btn.classList.toggle("bookmarked", !isBookmarked);
-        var path = btn.querySelector("svg path");
+        const path = btn.querySelector("svg path");
         if (path) {
             path.setAttribute("d", isBookmarked ? path.getAttribute("data-path-inactive") : path.getAttribute("data-path-active"));
         }
+        showToast(isBookmarked ? "북마크가 해제되었습니다." : "북마크에 저장되었습니다.");
     }
 
     // 이미지 프리뷰
-    var previewOverlay = document.getElementById("postMediaPreviewOverlay");
-    var previewImg = document.getElementById("postMediaPreviewImage");
-    var previewClose = document.getElementById("postMediaPreviewClose");
+    const previewOverlay = document.getElementById("postMediaPreviewOverlay");
+    const previewImg = document.getElementById("postMediaPreviewImage");
+    const previewClose = document.getElementById("postMediaPreviewClose");
 
     function openPreview(src, alt) {
         if (!previewOverlay || !src) return;
@@ -204,12 +215,11 @@ if (trendReportMenu) {
     });
 
     // 이벤트 위임 (productsSection)
-    var productsSection = document.getElementById("productsSection");
     if (productsSection) {
         productsSection.addEventListener("click", (e) => {
-            var likeBtn     = e.target.closest(".Post-Action-Btn.Like");
-            var bookmarkBtn = e.target.closest(".Post-Action-Btn.Bookmark");
-            var mediaImg    = e.target.closest(".Post-Media-Img");
+            const likeBtn     = e.target.closest(".Post-Action-Btn.Like");
+            const bookmarkBtn = e.target.closest(".Post-Action-Btn.Bookmark");
+            const mediaImg    = e.target.closest(".Post-Media-Img");
 
             if (likeBtn)     { handleLike(likeBtn); return; }
             if (bookmarkBtn) { handleBookmark(bookmarkBtn); return; }
@@ -219,18 +229,17 @@ if (trendReportMenu) {
 })();
 
 // 8. 검색창 포커스 드롭다운 + 최근검색 삭제
-// main event.js(window.onload) 이후에 등록해야 label 덮어쓰기 충돌 방지
 window.addEventListener("load", function () {
 
-    var searchForm        = document.getElementById("searchForm");
-    var searchInput       = document.getElementById("searchInput");
-    var searchClearBtn    = document.getElementById("searchClearBtn");
-    var searchPanel       = document.getElementById("searchPanel");
-    var searchPanelEmpty  = document.getElementById("searchPanelEmpty");
-    var searchRecentSec   = document.getElementById("searchRecentSection");
-    var searchResultsEl   = document.getElementById("searchResults");
-    var searchResultTopic = document.getElementById("searchResultTopic");
-    var searchResultLabel = document.getElementById("searchResultLabel");
+    const searchForm        = document.getElementById("searchForm");
+    const searchInput       = document.getElementById("searchInput");
+    const searchClearBtn    = document.getElementById("searchClearBtn");
+    const searchPanel       = document.getElementById("searchPanel");
+    const searchPanelEmpty  = document.getElementById("searchPanelEmpty");
+    const searchRecentSec   = document.getElementById("searchRecentSection");
+    const searchResultsEl   = document.getElementById("searchResults");
+    const searchResultTopic = document.getElementById("searchResultTopic");
+    const searchResultLabel = document.getElementById("searchResultLabel");
 
     if (searchForm && searchInput && searchPanel) {
 
@@ -270,7 +279,7 @@ window.addEventListener("load", function () {
         }
 
         function updatePanel() {
-            var val = searchInput.value.trim();
+            const val = searchInput.value.trim();
             updateSearchClearButton();
             if (val.length > 0) {
                 showResults(val);
@@ -291,7 +300,6 @@ window.addEventListener("load", function () {
             updatePanel();
         });
 
-        // main event.js 이후에 등록 → 마지막으로 실행되어 # 없는 텍스트로 덮어씀
         searchInput.addEventListener("input", function (e) {
             updatePanel();
         });
@@ -333,7 +341,7 @@ window.addEventListener("load", function () {
     // 개별 삭제 버튼
     if (searchRecentSec) {
         searchRecentSec.addEventListener("click", function (e) {
-            var deleteBtn = e.target.closest(".searchRecentDeleteBtn");
+            const deleteBtn = e.target.closest(".searchRecentDeleteBtn");
             if (deleteBtn) {
                 e.stopPropagation();
                 deleteBtn.closest(".searchResultItem").remove();
@@ -344,7 +352,7 @@ window.addEventListener("load", function () {
         });
 
         // 모두 지우기
-        var clearAllBtn = searchRecentSec.querySelector(".searchRecentClearAll");
+        const clearAllBtn = searchRecentSec.querySelector(".searchRecentClearAll");
         if (clearAllBtn) {
             clearAllBtn.addEventListener("click", function (e) {
                 e.stopPropagation();

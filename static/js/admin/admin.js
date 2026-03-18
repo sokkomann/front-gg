@@ -1,7 +1,6 @@
 // 변수
 
-window.onload = () => {
-    const portals = document.querySelectorAll(".each-menu");
+const portals = document.querySelectorAll(".each-menu");
     const pages = document.querySelectorAll(".page");
 
     const memberTbody = document.querySelector("#memberTbody");
@@ -1105,6 +1104,4 @@ window.onload = () => {
     bindFilter("filterPostMonthly", p => { postMonthlyPeriod = p; },  () => { if (drawnPortals.has(7)) drawPostMonthly(); });
     bindFilter("filterPostCategory", p => { postCategoryPeriod = p; }, () => { if (drawnPortals.has(7)) drawPostCategory(); });
     bindFilter("filterReportMonthly", p => { reportMonthlyPeriod = p; },() => { if (drawnPortals.has(8)) drawReportMonthly(); });
-
-};
 
