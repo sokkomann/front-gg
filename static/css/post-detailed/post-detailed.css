@@ -416,16 +416,7 @@ a {
     display: flex;
     flex-direction: column;
     gap: 10px;
-}
-
-.post-detail-inline-reply-toolbar[hidden],
-.post-detail-inline-reply-context[hidden] {
-    display: none;
-}
-
-.post-detail-inline-reply.is-focused .post-detail-inline-reply-toolbar,
-.post-detail-inline-reply.is-focused .post-detail-inline-reply-context {
-    display: flex;
+    min-height: 0;
 }
 
 .post-detail-inline-reply-context {
@@ -440,12 +431,6 @@ a {
 
 .post-detail-inline-reply-context-handle {
     color: #1d9bf0;
-}
-
-.post-detail-inline-reply-main {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
 }
 
 .post-detail-inline-reply-avatar {
@@ -470,193 +455,239 @@ a {
     min-width: 0;
 }
 
-.post-detail-inline-reply-editor {
-    width: 100%;
-    min-height: 38px;
-    padding-top: 4px;
-    color: #0f1419;
-    font-size: 31px;
-    line-height: 36px;
-    outline: none;
-    white-space: pre-wrap;
-    word-break: break-word;
+.tweet-modal__avatar-image {
+    width: 36px;
+    height: 36px;
+    border-radius: 9999px;
+    object-fit: cover;
+    flex-shrink: 0;
 }
 
-.post-detail-inline-reply-editor:empty::before {
+.tweet-modal__composer {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    min-height: 0;
+    padding: 6px 0 12px;
+}
+
+.tweet-modal__editor {
+    width: 100%;
+    min-height: 20px;
+    padding-top: 2px;
+    font-size: 20px;
+    line-height: 1.5;
+    outline: none;
+    color: #0f1419;
+    word-break: break-word;
+    white-space: pre-wrap;
+    font-family: inherit;
+}
+
+.tweet-modal__editor:empty::before {
     content: attr(data-placeholder);
     display: block;
     color: #536471;
     pointer-events: none;
 }
 
-.post-detail-inline-reply-attachments {
+.tweet-modal__attachment {
+    width: 100%;
+    max-width: 520px;
     margin-top: 12px;
 }
 
-.post-detail-inline-reply-attachment-media {
-    display: grid;
-    gap: 10px;
+.tweet-modal__attachment[hidden] {
+    display: none;
 }
 
-.post-detail-inline-reply-attachment-item {
+.attachments {
+    width: 100%;
+}
+
+.media-grid-wrapper {
     position: relative;
-    overflow: hidden;
-    border: 1px solid #cfd9de;
-    border-radius: 18px;
-    background: #f7f9f9;
+    width: 100%;
 }
 
-.post-detail-inline-reply-attachment-item img,
-.post-detail-inline-reply-attachment-item video {
+.media-aspect-ratio {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+}
+
+.media-aspect-ratio--single {
+    padding-bottom: 88.3495%;
+}
+
+.media-absolute-layer {
+    position: absolute;
+    inset: 0;
+}
+
+.media-row {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+.media-col {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    gap: 2px;
+    height: 100%;
+}
+
+.media-col:not(:last-child) {
+    margin-right: 2px;
+}
+
+.media-cell {
+    position: relative;
+    flex: 1 1 0%;
+    overflow: hidden;
+    border-radius: 4px;
+}
+
+.media-cell--single {
+    height: 100%;
+    border-radius: 16px;
+}
+
+.media-cell--left,
+.media-cell--left-tall {
+    border-radius: 16px 4px 4px 16px;
+}
+
+.media-cell--right {
+    border-radius: 4px 16px 16px 4px;
+}
+
+.media-cell--top-left {
+    border-radius: 16px 4px 4px 4px;
+}
+
+.media-cell--top-right,
+.media-cell--right-top {
+    border-radius: 4px 16px 4px 4px;
+}
+
+.media-cell--bottom-left {
+    border-radius: 4px 4px 4px 16px;
+}
+
+.media-cell--bottom-right,
+.media-cell--right-bottom {
+    border-radius: 4px 4px 16px 4px;
+}
+
+.media-cell-inner {
+    position: absolute;
+    inset: 0;
+}
+
+.media-img-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.media-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.media-img,
+.tweet-modal__attachment-video {
     display: block;
     width: 100%;
-    max-height: 360px;
+    height: 100%;
     object-fit: cover;
+    user-select: none;
+    -webkit-user-drag: none;
 }
 
-.post-detail-inline-reply-attachment-file {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 16px;
-    border: 1px solid #cfd9de;
-    border-radius: 18px;
-    color: #536471;
-    font-size: 14px;
-}
-
-.post-detail-inline-reply-attachment-remove {
+.media-btn-delete {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 999px;
-    background: rgba(15, 20, 25, 0.72);
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    background-color: rgba(15, 20, 25, 0.75);
     color: #ffffff;
-}
-
-.post-detail-inline-reply-meta {
-    padding: 12px 0;
-    border-bottom: 1px solid #eff3f4;
-}
-
-.post-detail-inline-reply-location-display {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    color: #1d9bf0;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.post-detail-inline-reply-location-display-inner {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 0 11px;
-    min-height: 22px;
-}
-
-.post-detail-inline-reply-location-display svg {
-    width: 14px;
-    height: 14px;
-    fill: currentColor;
-}
-
-.post-detail-inline-reply-toolbar {
-    position: relative;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding-top: 12px;
-}
-
-.post-detail-inline-reply-tools,
-.post-detail-inline-reply-location-actions,
-.composerActions {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.post-detail-inline-reply-tool-file {
-    position: relative;
-}
-
-.post-detail-inline-reply-tool-btn,
-.post-detail-inline-reply-location-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 999px;
-    color: #1d9bf0;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
     transition: background-color 0.2s ease;
 }
 
-.post-detail-inline-reply-tool-btn:hover,
-.post-detail-inline-reply-location-action:hover {
-    background: rgba(29, 155, 240, 0.1);
+.media-btn-delete:hover {
+    background-color: rgba(15, 20, 25, 0.9);
 }
 
-.post-detail-inline-reply-tool-btn svg {
-    width: 20px;
-    height: 20px;
-    fill: currentColor;
-}
-
-.post-detail-inline-reply-tool-btn--format {
-    color: #1d9bf0;
-}
-
-.post-detail-inline-reply-tool-btn--format.is-active,
-.tweet-modal__tool-btn--format.is-active {
-    background: rgba(29, 155, 240, 0.14);
-    color: #1d9bf0;
-}
-
-.tweet-modal__tool-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border: 0;
-    background: transparent;
-    border-radius: 50%;
-    color: #1d9bf0;
-    fill: currentColor;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.tweet-modal__tool-btn:hover {
-    background: rgba(29, 155, 240, 0.1);
-}
-
-.tweet-modal__tool-btn--format {
-    color: #0f1419;
-}
-
-.tweet-modal__tool-format-icon {
+.media-btn-delete svg {
     width: 18px;
     height: 18px;
     fill: currentColor;
 }
 
-.post-detail-inline-reply-file-input {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    pointer-events: none;
+.tweet-modal__attachment-meta {
+    margin-top: 8px;
+}
+
+.media-actions-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 0 4px;
+}
+
+.media-action-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #536471;
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 20px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 0.2s ease;
+}
+
+.media-action-link:hover {
+    color: #1d9bf0;
+}
+
+.media-action-link svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
+.tweet-modal__attachment-meta-btn[hidden] {
+    display: none;
 }
 
 .composerActions {
+    display: flex;
+    align-items: center;
     gap: 12px;
 }
 
@@ -713,93 +744,6 @@ a {
     cursor: not-allowed;
 }
 
-.post-detail-inline-reply-emoji-picker {
-    position: absolute;
-    left: 0;
-    bottom: calc(100% + 12px);
-    z-index: 20;
-    width: min(340px, calc(100vw - 48px));
-    max-height: 360px;
-    overflow: auto;
-    border: 1px solid #eff3f4;
-    border-radius: 16px;
-    background: #ffffff;
-    box-shadow:
-        rgba(101, 119, 134, 0.2) 0 0 15px 0,
-        rgba(101, 119, 134, 0.15) 0 0 3px 1px;
-}
-
-.post-detail-inline-reply-emoji-search,
-.post-detail-inline-reply-location-search {
-    padding: 12px;
-    border-bottom: 1px solid #eff3f4;
-}
-
-.post-detail-inline-reply-emoji-search-input,
-.post-detail-inline-reply-location-input {
-    width: 100%;
-    height: 40px;
-    padding: 0 14px;
-    border: 1px solid #cfd9de;
-    border-radius: 999px;
-    background: #f7f9f9;
-}
-
-.post-detail-inline-reply-emoji-tabs {
-    display: flex;
-    gap: 4px;
-    padding: 8px 12px;
-    border-bottom: 1px solid #eff3f4;
-}
-
-.post-detail-inline-reply-emoji-tab {
-    min-width: 42px;
-    height: 32px;
-    padding: 0 10px;
-    border-radius: 999px;
-    color: #536471;
-    font-size: 13px;
-}
-
-.post-detail-inline-reply-emoji-tab--active {
-    background: rgba(29, 155, 240, 0.12);
-    color: #1d9bf0;
-}
-
-.post-detail-inline-reply-emoji-content,
-.post-detail-inline-reply-location-list {
-    padding: 12px;
-}
-
-.post-detail-inline-reply-emoji-section-title {
-    margin: 0 0 10px;
-    font-size: 13px;
-    color: #536471;
-}
-
-.post-detail-inline-reply-emoji-grid {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 6px;
-}
-
-.post-detail-inline-reply-emoji-option {
-    height: 38px;
-    border-radius: 12px;
-    font-size: 22px;
-}
-
-.post-detail-inline-reply-emoji-option:hover {
-    background: #eff3f4;
-}
-
-.post-detail-inline-reply-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 4px 0 0;
-}
-
 .post-detail-inline-reply-body.tweet-modal__input-wrap {
     position: relative;
     display: flex;
@@ -808,23 +752,21 @@ a {
     padding-top: 2px;
 }
 
-.post-detail-inline-reply-editor {
-    min-height: 24px;
-    padding-top: 0;
-    font-size: 20px;
-    line-height: 24px;
-}
-
 .tweet-modal__footer {
     display: flex;
+    flex-direction: column;
     gap: 12px;
+    width: 100%;
 }
 
 .tweet-modal__footer-meta {
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    width: 100%;
     min-height: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eff3f4;
 }
 
 .tweet-modal__footer-meta-slot {
@@ -902,17 +844,12 @@ a {
     display: none;
 }
 
-.post-detail-inline-reply.is-focused .tweet-modal__footer-bottom,
-.post-detail-inline-reply.is-focused .post-detail-inline-reply-context {
-    display: flex;
-}
-
 .tweet-modal__footer-bottom {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 200px;
+    gap: 12px;
     width: 100%;
 }
 
@@ -931,6 +868,13 @@ a {
 
 .tweet-modal__tool-file {
     position: relative;
+}
+
+.tweet-modal__file-input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
 }
 
 .tweet-modal__tool-btn {
@@ -965,8 +909,7 @@ a {
     display: none;
 }
 
-.tweet-modal__tool-btn--geo,
-.tweet-modal__tool-btn--format {
+.tweet-modal__tool-btn--geo {
     width: 32px;
     height: 32px;
 }
@@ -1009,16 +952,6 @@ a {
     width: 0;
     height: 0;
     overflow: hidden;
-}
-
-.tweet-modal__tool-btn--format {
-    color: #1d9bf0;
-}
-
-.tweet-modal__tool-format-icon {
-    display: block;
-    fill: currentColor;
-    border-radius: 4px;
 }
 
 .tweet-modal__emoji-picker[hidden] {
@@ -1464,46 +1397,6 @@ a {
     position: relative;
 }
 
-.post-detail-more-menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    z-index: 30;
-    min-width: 170px;
-    padding: 6px 0;
-    border-radius: 14px;
-    background: #ffffff;
-    box-shadow:
-        rgba(101, 119, 134, 0.2) 0 0 15px 0,
-        rgba(101, 119, 134, 0.15) 0 0 3px 1px;
-}
-
-.post-detail-more-menu button {
-    width: 100%;
-    padding: 12px 16px;
-    color: #0f1419;
-    font-size: 15px;
-    text-align: left;
-}
-
-.post-detail-more-menu button:hover {
-    background: rgba(15, 20, 25, 0.04);
-}
-
-.post-detail-toast {
-    position: fixed;
-    left: 50%;
-    bottom: 24px;
-    transform: translateX(-50%);
-    padding: 10px 16px;
-    border-radius: 999px;
-    background: #0f1419;
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 700;
-    box-shadow: 0 10px 20px rgba(15, 20, 25, 0.2);
-}
-
 .dropdown-menu {
     position: fixed;
     display: flex;
@@ -1850,4 +1743,171 @@ a {
     color: #536471;
     font-size: 15px;
     text-align: center;
+}
+
+.post-detail-notification-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 88px;
+    transform: translateX(-50%);
+    z-index: 1300;
+    padding: 12px 20px;
+    border-radius: 999px;
+    background: #1d9bf0;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(15, 20, 25, 0.2);
+}
+
+.post-detail-notification-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 1300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.post-detail-notification-dialog__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 20, 25, 0.45);
+}
+
+.post-detail-notification-dialog__card {
+    position: relative;
+    z-index: 1;
+    width: min(600px, calc(100vw - 32px));
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow:
+        rgba(101, 119, 134, 0.2) 0 0 15px 0,
+        rgba(101, 119, 134, 0.15) 0 0 3px 1px;
+}
+
+.post-detail-notification-dialog__card--small {
+    width: min(320px, calc(100vw - 32px));
+    padding: 32px;
+}
+
+.post-detail-notification-dialog__card--report {
+    width: min(600px, calc(100vw - 32px));
+}
+
+.post-detail-notification-dialog__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-bottom: 1px solid #eff3f4;
+}
+
+.post-detail-notification-dialog__icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    color: #0f1419;
+}
+
+.post-detail-notification-dialog__icon-btn:hover {
+    background: rgba(15, 20, 25, 0.08);
+}
+
+.post-detail-notification-dialog__icon-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.post-detail-notification-dialog__title {
+    margin: 0;
+    color: #0f1419;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.post-detail-notification-dialog__body {
+    padding: 20px 0 0;
+}
+
+.post-detail-notification-dialog__description {
+    margin: 0;
+    color: #536471;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.post-detail-notification-dialog__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.post-detail-notification-dialog__danger,
+.post-detail-notification-dialog__secondary {
+    width: 100%;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.post-detail-notification-dialog__danger {
+    padding: 12px 16px;
+    background: #f4212e;
+    color: #ffffff;
+}
+
+.post-detail-notification-dialog__secondary {
+    padding: 12px 16px;
+    border: 1px solid #cfd9de;
+    background: #ffffff;
+    color: #0f1419;
+}
+
+.post-detail-notification-dialog__question {
+    margin: 0;
+    padding: 0 16px 16px;
+    color: #0f1419;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.post-detail-notification-report__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid #eff3f4;
+}
+
+.post-detail-notification-report__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 16px;
+    border-bottom: 1px solid #eff3f4;
+    background: #ffffff;
+    color: #0f1419;
+    font-size: 15px;
+    text-align: left;
+}
+
+.post-detail-notification-report__item:hover {
+    background: rgba(15, 20, 25, 0.04);
+}
+
+.post-detail-notification-report__item svg {
+    width: 18px;
+    height: 18px;
+    fill: #536471;
+    flex-shrink: 0;
 }

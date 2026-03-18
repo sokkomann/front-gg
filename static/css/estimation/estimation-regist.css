@@ -82,10 +82,6 @@ body {
     visibility: visible;
 }
 
-#postComposerForm #composerLinkedProfile[aria-hidden="true"] .composerProfileLinkAvatar,
-#postComposerForm #composerLinkedProfile[aria-hidden="true"] .composerProfileLinkEmail {
-    visibility: hidden;
-}
 
 #postComposerForm .composerProfileLinkAvatar {
     width: 40px;

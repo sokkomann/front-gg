@@ -1445,7 +1445,8 @@ a.menu-item:visited {
 .tweet-modal__draft-view[hidden],
 .tweet-modal__tag-view[hidden],
 .tweet-modal__location-view[hidden],
-.tweet-modal__media-view[hidden] {
+.tweet-modal__media-view[hidden],
+.tweet-modal__product-view[hidden] {
     display: none;
 }
 
@@ -1453,7 +1454,8 @@ a.menu-item:visited {
 .tweet-modal__draft-view,
 .tweet-modal__tag-view,
 .tweet-modal__location-view,
-.tweet-modal__media-view {
+.tweet-modal__media-view,
+.tweet-modal__product-view {
     display: flex;
     flex: 1;
     flex-direction: column;
@@ -2744,6 +2746,53 @@ a.menu-item:visited {
     inset: 0;
     opacity: 0;
     pointer-events: none;
+}
+
+/* 이모티콘 피커 패널: position:fixed로 overflow 제약을 벗어나 모달 위에 떠 표시된다 */
+.tweet-modal__emoji-picker {
+    position: fixed;
+    z-index: 2100;
+    background: #fff;
+    border: 1px solid #e1e8ed;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    padding: 8px;
+    width: 288px;
+    box-sizing: border-box;
+}
+
+/* 이모티콘 그리드: 8열 고정 배치 */
+.tweet-modal__emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+/* 이모티콘 개별 버튼 */
+.tweet-modal__emoji-item {
+    background: none;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    padding: 4px;
+    text-align: center;
+    transition: background 0.1s;
+}
+
+.tweet-modal__emoji-item:hover {
+    background: rgba(29, 155, 240, 0.1);
+}
+
+/* 판매글 선택 서브뷰: compose-view와 동일한 레이아웃을 사용한다 */
+.tweet-modal__product-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
 }
 
 .tweet-modal__location-view {
