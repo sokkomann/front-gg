@@ -1877,3 +1877,8 @@ button {
     }
 }
 
+
+/* join-modal-user-name: 다음 버튼 포인터 */
+.next-button {
+    cursor: pointer !important;
+}

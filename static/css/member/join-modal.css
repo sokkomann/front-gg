@@ -1,4 +1,4 @@
-button {
+﻿button {
     text-align: inherit;
     font-size: inherit;
     font-family: inherit;
@@ -1323,8 +1323,8 @@ button {
     font-size: 15px;
     text-align: right;
     font-weight: 400;
+    cursor: pointer;
 }
-
 
 .replace-email, .replace-phone {
     background-color: rgba(0, 0, 0, 0.00);
@@ -1343,6 +1343,7 @@ button {
     font-family: inherit;
     min-width: 0px;
     text-align: inherit;
+    cursor: pointer;
 }
 
 .birth-date {
@@ -1676,3 +1677,5 @@ button {
     color: rgb(29, 155, 240);
     font-size: 12px;
 }
+
+

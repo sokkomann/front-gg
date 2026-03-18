@@ -1673,3 +1673,26 @@ button {
     }
 }
 
+
+/* join-modal-code 입력 글자 겹침 방지 및 버튼 상태 보정 */
+.phone-placeholder-in3 {
+    margin-top: 16px !important;
+}
+
+.phone-placeholder-text {
+    display: flex !important;
+    align-items: center;
+}
+
+.phone-input {
+    line-height: 24px;
+}
+
+.next-button:disabled {
+    opacity: 0.5;
+}
+
+.next-button:not(:disabled) {
+    opacity: 1;
+    background-color: rgb(15, 20, 25);
+}

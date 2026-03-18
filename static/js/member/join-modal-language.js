@@ -132,7 +132,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const willCheck = !item.classList.contains("is-checked");
-        item.classList.toggle("is-checked", willCheck);
-        item.setAttribute("aria-selected", willCheck ? "true" : "false");
+
+        list.querySelectorAll(".js-lang-item").forEach((langItem) => {
+            langItem.classList.remove("is-checked");
+            langItem.setAttribute("aria-selected", "false");
+        });
+
+        if (willCheck) {
+            item.classList.add("is-checked");
+            item.setAttribute("aria-selected", "true");
+        }
     });
 });

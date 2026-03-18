@@ -165,11 +165,52 @@
 
     syncNextButton();
 
+    // 휴대폰/이메일 전환
+    const changeButton = document.querySelector(".change");
+    const replaceEmailText = document.querySelector(".replace-email");
+    const phoneLabelText = document.querySelector(".phone-text-in");
+    const phoneInput = document.querySelector(".phone-input");
+
+    if (changeButton && replaceEmailText && phoneLabelText && phoneInput) {
+        let useEmail = false;
+
+        const syncPhoneEmailMode = () => {
+            if (useEmail) {
+                phoneLabelText.textContent = "이메일";
+                replaceEmailText.textContent = "휴대폰 사용하기";
+                phoneInput.setAttribute("name", "email");
+                phoneInput.setAttribute("autocomplete", "email");
+                phoneInput.setAttribute("inputmode", "email");
+            } else {
+                phoneLabelText.textContent = "휴대폰 번호";
+                replaceEmailText.textContent = "이메일 사용하기";
+                phoneInput.setAttribute("name", "phone");
+                phoneInput.setAttribute("autocomplete", "tel");
+                phoneInput.setAttribute("inputmode", "tel");
+            }
+        };
+
+        syncPhoneEmailMode();
+
+        changeButton.addEventListener("click", () => {
+            useEmail = !useEmail;
+            phoneInput.value = "";
+            syncPhoneEmailMode();
+        });
+    }
     const closeButton = document.querySelector(".join-modal-header-close-button, .join-modal-close");
     const modalRoot = document.querySelector(".join-modal, .join-modal-overlay");
     if (closeButton && modalRoot) {
         closeButton.addEventListener("click", () => {
             modalRoot.style.display = "none";
+        });
+    }
+
+    // birth-date-input 8자 제한(숫자만)
+    const birthInput = document.querySelector(".birth-date-input");
+    if (birthInput) {
+        birthInput.addEventListener("input", () => {
+            birthInput.value = birthInput.value.replace(/\D/g, "").slice(0, 8);
         });
     }
 });

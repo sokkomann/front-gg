@@ -1,4 +1,4 @@
-const btn = document.getElementById("addr-search-btn");
+﻿const btn = document.getElementById("addr-search-btn");
 if (btn) {
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
@@ -48,9 +48,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!input || !label) return;
 
-        // 에러 메시지 요소 생성
+        // ?먮윭 硫붿떆吏 ?붿냼 ?앹꽦
         const errorMsg = document.createElement("span");
-        errorMsg.textContent = "다시 입력하세요";
+        errorMsg.textContent = "?ㅼ떆 ?낅젰?섏꽭??;
         errorMsg.style.cssText = `
             display: none;
             color: rgb(244, 33, 46);
@@ -61,19 +61,19 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         wrap.appendChild(errorMsg);
 
-        // 초기 상태 - 이미 값 있으면 라벨 작게
+        // 珥덇린 ?곹깭 - ?대? 媛??덉쑝硫??쇰꺼 ?묎쾶
         if (input.value.trim() !== "") {
             shrink(labelText);
         }
 
-        // 포커스 - 파란 테두리 + 라벨 작게
+        // ?ъ빱??- ?뚮? ?뚮몢由?+ ?쇰꺼 ?묎쾶
         input.addEventListener("focus", () => {
             label.style.borderColor = "rgb(29, 155, 240)";
             label.style.borderWidth = "2px";
             shrink(labelText);
         });
 
-        // 입력 중 - 값 있으면 에러 숨김, 없으면 에러 표시
+        // ?낅젰 以?- 媛??덉쑝硫??먮윭 ?④?, ?놁쑝硫??먮윭 ?쒖떆
         input.addEventListener("input", () => {
             if (input.value.trim() !== "") {
                 errorMsg.style.display = "none";
@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        // 블러 - 파란 테두리 제거 + 에러 무조건 숨김
+        // 釉붾윭 - ?뚮? ?뚮몢由??쒓굅 + ?먮윭 臾댁“嫄??④?
         input.addEventListener("blur", () => {
             label.style.borderColor = "rgb(207, 217, 222)";
             label.style.borderWidth = "1px";
@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // 주소 자동 입력 후 라벨 처리
+    // 二쇱냼 ?먮룞 ?낅젰 ???쇰꺼 泥섎━
     document
         .getElementById("addr-search-btn")
         ?.addEventListener("click", () => {
@@ -138,3 +138,23 @@ function expand(labelText) {
     labelText.style.paddingTop = "16px";
     labelText.style.color = "rgb(83, 100, 113)";
 }
+
+// 공통 X(닫기) 버튼 동작
+function bindJoinModalClose() {
+    const closeButtons = document.querySelectorAll(".join-modal-header-close-button, .join-modal-close");
+    if (!closeButtons.length) return;
+
+    closeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            const modal = document.querySelector(".join-modal");
+            const root = modal?.closest(".join-modal-line1") || document.querySelector(".join-modal-line1");
+            const overlay = document.querySelector(".join-modal-overlay") || document.querySelector(".join-modal-all");
+
+            if (modal) modal.style.display = "none";
+            if (root) root.style.display = "none";
+            if (overlay) overlay.style.display = "none";
+        });
+    });
+}
+
+document.addEventListener("DOMContentLoaded", bindJoinModalClose);
